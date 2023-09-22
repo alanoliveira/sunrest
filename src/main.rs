@@ -1,3 +1,6 @@
+#[macro_use]
+mod log;
+
 fn main() {
-    println!("Hello, world!");
+    log!("Hello, world!");
 }
