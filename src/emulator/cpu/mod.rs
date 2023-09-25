@@ -13,6 +13,7 @@ use opcodes::*;
 const STACK_BASE_ADDR: u16 = 0x0100;
 const INITIAL_SP: u8 = 0xFD;
 const BREAK_VECTOR: u16 = 0xFFFE;
+const RESET_VECTOR: u16 = 0xFFFC;
 
 pub trait IO {
     fn read(&self, addr: u16) -> u8;
@@ -48,6 +49,12 @@ impl<I: IO> Cpu<I> {
             cycle: 0,
             busy_cycles: 0,
         }
+    }
+
+    pub fn reset(&mut self) {
+        self.detour(RESET_VECTOR);
+        self.sp = INITIAL_SP;
+        self.p = (Status::U | Status::I).into();
     }
 
     pub fn detour(&mut self, vector: u16) {

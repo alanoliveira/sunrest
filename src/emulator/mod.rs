@@ -1,4 +1,5 @@
 mod bus;
+mod cartridge;
 mod cpu;
 
 pub struct Emulator {
@@ -8,12 +9,16 @@ pub struct Emulator {
 }
 
 impl Emulator {
-    pub fn new() -> Self {
-        Self {
-            cpu: cpu::Cpu::new(bus::Bus::new()),
+    pub fn new<P>(rom_path: P) -> Self
+    where
+        P: AsRef<std::path::Path>,
+    {
+        let cartridge = cartridge::open_rom(rom_path.as_ref());
 
-            cycle: 0,
-        }
+        let mut cpu = cpu::Cpu::new(bus::Bus::new(cartridge));
+        cpu.reset();
+
+        Self { cpu, cycle: 0 }
     }
 
     pub fn clock(&mut self) {

@@ -1,5 +1,5 @@
-mod nestest;
 mod disasm;
+mod nestest;
 
 use super::{AddressingMode as AM, Instruction as IN, Status as S, *};
 
@@ -75,6 +75,15 @@ fn test_detour() {
     let mut cpu = mk_cpu!(mk_io!(0x3000: 0xBB, 0x3001: 0xAA), pc: 0x8000);
     cpu.detour(0x3000);
     assert_eq!(cpu.pc, 0xAABB);
+}
+
+#[test]
+fn test_reset() {
+    let mut cpu = mk_cpu!(mk_io!(0xFFFC: 0xBB, 0xFFFD: 0xAA), pc: 0x8000);
+    cpu.reset();
+    assert_eq!(cpu.pc, 0xAABB);
+    assert_eq!(cpu.sp, 0xFD);
+    assert_eq!(cpu.p, (S::U | S::I).into());
 }
 
 #[test]
