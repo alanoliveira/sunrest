@@ -1,6 +1,7 @@
 mod bus;
 mod cartridge;
 mod cpu;
+mod ppu;
 
 pub struct Emulator {
     cpu: cpu::Cpu<bus::Bus>,
