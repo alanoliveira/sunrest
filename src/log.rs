@@ -1,6 +1,6 @@
 macro_rules! log {
-    ($($arg:tt)*) => {
+    ($($arg:tt)*) => {{
         #[cfg(feature = "log")]
-        println!($($arg)*);
-    };
+        println!($($arg)*)
+    }};
 }

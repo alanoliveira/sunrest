@@ -4,5 +4,9 @@ mod log;
 mod emulator;
 
 fn main() {
-    log!("Hello, world!");
+    let mut emulator = emulator::Emulator::new();
+
+    loop {
+        emulator.clock();
+    }
 }
