@@ -1,10 +1,13 @@
 #[cfg(test)]
 mod tests;
 
+mod disasm;
 mod opcodes;
 mod status;
 
+pub use disasm::*;
 pub use status::Status;
+
 use opcodes::*;
 
 const STACK_BASE_ADDR: u16 = 0x0100;

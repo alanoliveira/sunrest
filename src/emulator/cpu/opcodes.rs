@@ -14,6 +14,25 @@ pub enum AddressingMode {
     Izy,
 }
 
+impl AddressingMode {
+    pub fn len(&self) -> usize {
+        match self {
+            AddressingMode::Imp => 0,
+            AddressingMode::Imm => 1,
+            AddressingMode::Zp0 => 1,
+            AddressingMode::Zpx => 1,
+            AddressingMode::Zpy => 1,
+            AddressingMode::Rel => 1,
+            AddressingMode::Abs => 2,
+            AddressingMode::Abx => 2,
+            AddressingMode::Aby => 2,
+            AddressingMode::Ind => 2,
+            AddressingMode::Izx => 1,
+            AddressingMode::Izy => 1,
+        }
+    }
+}
+
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 #[rustfmt::skip]
 pub enum Instruction {

@@ -1,4 +1,5 @@
 mod nestest;
+mod disasm;
 
 use super::{AddressingMode as AM, Instruction as IN, Status as S, *};
 
