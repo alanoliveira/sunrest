@@ -2,13 +2,17 @@ mod bus;
 mod cartridge;
 mod cpu;
 mod ppu;
+mod video;
 
 use std::{cell::RefCell, rc::Rc};
+
+pub use video::{Color, Signal as VideoSignal};
 
 pub struct Emulator {
     cpu: cpu::Cpu<bus::Bus>,
     ppu: PpuWrapper,
 
+    color_palette: [video::Color; 64],
     cycle: usize,
 }
 
@@ -33,7 +37,18 @@ impl Emulator {
         Self {
             cpu,
             ppu: PpuWrapper(ppu),
+
+            color_palette: video::DEFAULT_PALETTE.clone(),
             cycle: 0,
+        }
+    }
+
+    pub fn video_signal(&self) -> video::Signal {
+        let ppu = self.ppu.as_ref();
+        video::Signal {
+            x: ppu.dot,
+            y: ppu.scanline,
+            color: self.color_palette[ppu.color_idx],
         }
     }
 
@@ -45,7 +60,7 @@ impl Emulator {
 
         // ~53.69mhz
         if self.cycle % 4 == 0 {
-            self.ppu.clock();
+            self.ppu.as_mut().clock();
         }
 
         self.cycle += 1;
@@ -55,8 +70,12 @@ impl Emulator {
 struct PpuWrapper(Rc<RefCell<ppu::Ppu>>);
 
 impl PpuWrapper {
-    fn clock(&mut self) {
-        self.0.borrow_mut().clock();
+    fn as_mut(&mut self) -> std::cell::RefMut<ppu::Ppu> {
+        self.0.borrow_mut()
+    }
+
+    fn as_ref(&self) -> std::cell::Ref<ppu::Ppu> {
+        self.0.borrow()
     }
 }
 
