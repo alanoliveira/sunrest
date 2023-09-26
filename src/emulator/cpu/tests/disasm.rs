@@ -2,7 +2,7 @@ use super::*;
 
 macro_rules! push_data {
     ($data:expr, $ins:expr, $mode:expr, [$($args:expr),*]) => {{
-        $data.push(opcode_lookup($ins, $mode));
+        $data.push(util::opcode_lookup($ins, $mode));
         $( $data.push($args); )*
     }};
 }

@@ -12,12 +12,19 @@ use opcodes::*;
 
 const STACK_BASE_ADDR: u16 = 0x0100;
 const INITIAL_SP: u8 = 0xFD;
-const BREAK_VECTOR: u16 = 0xFFFE;
+const NMI_VECTOR: u16 = 0xFFFA;
 const RESET_VECTOR: u16 = 0xFFFC;
+const BREAK_VECTOR: u16 = 0xFFFE;
 
 pub trait IO {
     fn read(&self, addr: u16) -> u8;
     fn write(&mut self, addr: u16, val: u8);
+}
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum Signal {
+    Irq,
+    Nmi,
+    Rst,
 }
 
 pub struct Cpu<I: IO> {
@@ -29,9 +36,25 @@ pub struct Cpu<I: IO> {
     pub pc: u16,
     pub sp: u8,
     pub p: Status,
+    pub signal: Option<Signal>,
 
     pub cycle: usize,
     pub busy_cycles: usize,
+}
+
+impl<I: IO> std::fmt::Debug for Cpu<I> {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.debug_struct("Cpu")
+            .field("A", &format_args!("{:02X}", self.a))
+            .field("X", &format_args!("{:02X}", self.x))
+            .field("Y", &format_args!("{:02X}", self.y))
+            .field("P", &format_args!("{:#?}", self.p))
+            .field("SP", &format_args!("{:02X}", self.sp))
+            .field("PC", &format_args!("{:04X}", self.pc))
+            .field("SIG", &self.signal)
+            .field("CYC", &self.cycle)
+            .finish()
+    }
 }
 
 impl<I: IO> Cpu<I> {
@@ -45,6 +68,7 @@ impl<I: IO> Cpu<I> {
             pc: 0,
             sp: INITIAL_SP,
             p: (Status::U | Status::I).into(),
+            signal: None,
 
             cycle: 0,
             busy_cycles: 0,
@@ -64,13 +88,46 @@ impl<I: IO> Cpu<I> {
         self.pc = u16::from_le_bytes([lo, hi]);
     }
 
+    pub fn set_signal(&mut self, signal: Signal) {
+        if signal == Signal::Irq && self.p.get(Status::I) {
+            return;
+        }
+
+        self.signal = Some(signal);
+    }
+
     pub fn clock(&mut self) {
         if self.busy_cycles == 0 {
-            self.run_instruction();
+            match self.signal.take() {
+                Some(Signal::Irq) => {
+                    self.interrupt(true, BREAK_VECTOR);
+                    self.busy_cycles += 6;
+                }
+                Some(Signal::Nmi) => {
+                    self.interrupt(false, NMI_VECTOR);
+                    self.busy_cycles += 7;
+                }
+                Some(Signal::Rst) => {
+                    self.reset();
+                    self.busy_cycles += 7;
+                }
+                None => {
+                    self.run_instruction();
+                }
+            }
         }
 
         self.cycle += 1;
         self.busy_cycles -= 1;
+    }
+
+    fn interrupt(&mut self, maskable: bool, vector: u16) {
+        if maskable && self.p.get(Status::I) {
+            return;
+        }
+
+        self.detour(vector);
+        self.push(self.p.raw | Status::B | Status::U);
     }
 
     fn run_instruction(&mut self) {
