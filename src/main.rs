@@ -2,15 +2,14 @@
 mod log;
 
 mod emulator;
+mod ui;
 
 fn main() {
-    let mut emulator = emulator::Emulator::new(
+    let emulator = emulator::Emulator::new(
         std::env::args()
             .nth(1)
             .expect("Please provide a path to a ROM file"),
     );
 
-    loop {
-        emulator.clock();
-    }
+    ui::Ui::<ui::engines::SdlEngine>::new(emulator).run();
 }
