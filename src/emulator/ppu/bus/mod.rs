@@ -30,9 +30,9 @@ impl Bus {
 
     pub fn read(&self, addr: u16) -> u8 {
         match addr {
-            CARTRIDGE_START..=CARTRIDGE_END => self.cartridge_io.read(addr),
-            VRAM_START..=VRAM_END => self.vram.read(addr),
-            PALLETE_START..=PALLETE_END => self.palette_ram.read(addr),
+            CARTRIDGE_START..=CARTRIDGE_END => self.cartridge_io.read(addr - CARTRIDGE_START),
+            VRAM_START..=VRAM_END => self.vram.read(addr - VRAM_START),
+            PALLETE_START..=PALLETE_END => self.palette_ram.read(addr - PALLETE_START),
             _ => {
                 log!("Attempted to read from unmapped PPU address: {addr:04X}");
                 0
@@ -42,8 +42,8 @@ impl Bus {
 
     pub fn write(&mut self, addr: u16, val: u8) {
         match addr {
-            VRAM_START..=VRAM_END => self.vram.write(addr, val),
-            PALLETE_START..=PALLETE_END => self.palette_ram.write(addr, val),
+            VRAM_START..=VRAM_END => self.vram.write(addr - VRAM_START, val),
+            PALLETE_START..=PALLETE_END => self.palette_ram.write(addr - PALLETE_START, val),
             _ => {
                 log!("Attempted to write to unmapped PPU address: {addr:04X}");
             }

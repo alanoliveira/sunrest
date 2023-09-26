@@ -22,7 +22,5 @@ impl Ppu {
         }
     }
 
-    pub fn clock(&mut self) {
-
-    }
+    pub fn clock(&mut self) {}
 }
