@@ -60,7 +60,11 @@ impl Emulator {
 
         // ~53.69mhz
         if self.cycle % 4 == 0 {
-            self.ppu.as_mut().clock();
+            let mut ppu = self.ppu.as_mut();
+            ppu.clock();
+            if ppu.take_nmi() {
+                self.cpu.set_signal(cpu::Signal::Nmi);
+            }
         }
 
         self.cycle += 1;
@@ -82,10 +86,12 @@ impl PpuWrapper {
 struct PpuRegs(Rc<RefCell<ppu::Ppu>>);
 impl bus::PpuRegsIO for PpuRegs {
     fn read(&self, addr: u16) -> u8 {
-        0
+        self.0.borrow_mut().io().read(addr)
     }
 
-    fn write(&mut self, addr: u16, val: u8) {}
+    fn write(&mut self, addr: u16, val: u8) {
+        self.0.borrow_mut().io().write(addr, val);
+    }
 }
 
 struct PpuCartridge(Rc<RefCell<cartridge::Cartridge>>);
