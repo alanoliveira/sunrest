@@ -1,16 +1,14 @@
 mod io;
-mod vblank;
+mod registers;
 
 pub mod bus;
-pub mod tests;
 
 const DOTS_PER_LINE: usize = 341;
 const LINES_PER_FRAME: usize = 262;
 
 pub struct Ppu {
     pub bus: bus::Bus,
-
-    pub vblank: vblank::VblankHandler,
+    regs: registers::Registers,
 
     pub color_idx: usize,
     pub dot: usize,
@@ -23,8 +21,7 @@ impl Ppu {
     pub fn new(bus: bus::Bus) -> Self {
         Self {
             bus,
-
-            vblank: vblank::VblankHandler::default(),
+            regs: registers::Registers::default(),
 
             color_idx: 0,
             dot: 0,
@@ -35,7 +32,7 @@ impl Ppu {
     }
 
     pub fn take_nmi(&mut self) -> bool {
-        self.vblank.take_nmi()
+        self.regs.nmi.take().is_some()
     }
 
     pub fn io(&mut self) -> io::IO {
@@ -54,25 +51,49 @@ impl Ppu {
         }
 
         match self.scanline {
+            0..=239 => self.visible_line(),
             241 => self.vblank_start_line(),
             261 => self.pre_render_line(),
             _ => (),
         }
 
-        self.color_idx = (self.dot * self.frame + self.scanline) % 64;
-
         self.cycle += 1;
+    }
+
+    fn visible_line(&mut self) {
+        self.rendering_preparation();
+        self.color_idx = (self.dot * self.frame + self.scanline) % 64;
     }
 
     fn vblank_start_line(&mut self) {
         if self.dot == 1 {
-            self.vblank.start();
+            self.regs.start_vblank();
         }
     }
 
     fn pre_render_line(&mut self) {
-        if self.dot == 1 {
-            self.vblank.stop();
+        self.rendering_preparation();
+
+        match self.dot {
+            1 => self.regs.stop_vblank(),
+            _ => (),
+        }
+
+        if self.regs.render_enabled() && matches!(self.dot, 280..=304) {
+            self.regs.update_vram_address_y();
+        }
+    }
+
+    fn rendering_preparation(&mut self) {
+        if !self.regs.render_enabled() {
+            return;
+        }
+
+        match self.dot {
+            1..=256 | 321..=336 if self.dot % 8 == 0 => self.regs.vram_addr.increment_x(),
+            256 => self.regs.vram_addr.increment_y(),
+            257 => self.regs.update_vram_address_x(),
+            _ => (),
         }
     }
 }
