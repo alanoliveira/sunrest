@@ -46,7 +46,7 @@ impl Emulator {
     pub fn video_signal(&self) -> video::Signal {
         let ppu = self.ppu.as_ref();
         video::Signal {
-            x: ppu.dot,
+            x: ppu.dot.wrapping_sub(1),
             y: ppu.scanline,
             color: self.color_palette[ppu.color_idx],
         }
