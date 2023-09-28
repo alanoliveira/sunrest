@@ -26,6 +26,7 @@ pub struct Registers {
     pub bg_pattern_table: PatternTable,
     pub spr_height: SprHeight,
     pub name_table: NameTable,
+    pub oam_addr: u8,
 
     pub clip_bg: bool,
     pub clip_spr: bool,

@@ -1,6 +1,7 @@
 mod bus;
 mod cartridge;
 mod cpu;
+mod oam_dma;
 mod ppu;
 mod video;
 
@@ -11,6 +12,7 @@ pub use video::{Color, Signal as VideoSignal};
 pub struct Emulator {
     cpu: cpu::Cpu<bus::Bus>,
     ppu: PpuWrapper,
+    oam_dma: oam_dma::OamDma,
 
     color_palette: [video::Color; 64],
     cycle: usize,
@@ -37,6 +39,7 @@ impl Emulator {
         Self {
             cpu,
             ppu: PpuWrapper(ppu),
+            oam_dma: oam_dma::OamDma::new(),
 
             color_palette: video::DEFAULT_PALETTE.clone(),
             cycle: 0,
@@ -55,7 +58,11 @@ impl Emulator {
     pub fn clock(&mut self) {
         // ~1.79mhz
         if self.cycle % 12 == 0 {
-            self.cpu.clock();
+            if self.oam_dma.is_active() {
+                self.clock_oam_dma();
+            } else {
+                self.clock_cpu();
+            }
         }
 
         // ~53.69mhz
@@ -68,6 +75,21 @@ impl Emulator {
         }
 
         self.cycle += 1;
+    }
+
+    fn clock_cpu(&mut self) {
+        self.cpu.clock();
+        if let Some(page) = self.cpu.io.take_oam_dma_page() {
+            self.oam_dma.prepare(page);
+        }
+    }
+
+    fn clock_oam_dma(&mut self) {
+        if (self.cycle / 12) % 2 == 1 {
+            self.oam_dma.write(&mut self.cpu.io);
+        } else {
+            self.oam_dma.read(&self.cpu.io);
+        }
     }
 }
 

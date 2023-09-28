@@ -44,6 +44,18 @@ impl Debugger<'_> {
         println!();
     }
 
+    pub fn print_oam(&self) {
+        println!("OAM:");
+        for row in 0..8 {
+            for col in 0..32 {
+                let sprite = self.0.oam[row * 32 + col];
+                print!("{:02X} ", sprite);
+            }
+            println!();
+        }
+        println!();
+    }
+
     pub fn print_pattern_row_by_tile_addr(&self, tile_addr: u16, row: usize) {
         let row = row as u16;
         let mut pattern_hi = self.0.bus.read(tile_addr + row);

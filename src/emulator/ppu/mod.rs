@@ -10,9 +10,11 @@ use pixel::{Kind as PixelKind, Pixel};
 
 const DOTS_PER_LINE: usize = 341;
 const LINES_PER_FRAME: usize = 262;
+const OAM_SIZE: usize = 0x100;
 
 pub struct Ppu {
     pub bus: bus::Bus,
+    oam: Box<[u8; OAM_SIZE]>,
     regs: registers::Registers,
     background: background::Background,
 
@@ -37,6 +39,7 @@ impl Ppu {
     pub fn new(bus: bus::Bus) -> Self {
         Self {
             bus,
+            oam: Box::new([0; OAM_SIZE]),
             regs: registers::Registers::default(),
             background: background::Background::new(),
 

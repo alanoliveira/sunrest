@@ -10,6 +10,7 @@ impl IO<'_> {
     pub fn read(&mut self, addr: u16) -> u8 {
         match addr {
             0x02 => self.read_status(),
+            0x04 => self.read_oam_data(),
             0x07 => self.read_data(),
             0x00..=0x07 => {
                 log!("Attempted to read from unimplemented PPU address: {addr:04X}");
@@ -23,6 +24,8 @@ impl IO<'_> {
         match addr {
             0x00 => self.write_ctrl(val),
             0x01 => self.write_mask(val),
+            0x03 => self.write_oam_address(val),
+            0x04 => self.write_oam_data(val),
             0x05 => self.write_scroll(val),
             0x06 => self.write_address(val),
             0x07 => self.write_data(val),
@@ -45,6 +48,10 @@ impl IO<'_> {
         self.0.regs.vram_data = self.0.bus.read(addr);
         self.0.regs.increment_vram_address();
         ret
+    }
+
+    fn read_oam_data(&mut self) -> u8 {
+        self.0.oam[self.0.regs.oam_addr as usize]
     }
 
     pub fn write_ctrl(&mut self, val: u8) {
@@ -80,6 +87,15 @@ impl IO<'_> {
         self.0.regs.clip_spr = val & 0b0000_0100 == 0;
         self.0.regs.show_bg = val & 0b0000_1000 != 0;
         self.0.regs.show_spr = val & 0b0001_0000 != 0;
+    }
+
+    fn write_oam_address(&mut self, val: u8) {
+        self.0.regs.oam_addr = val;
+    }
+
+    fn write_oam_data(&mut self, val: u8) {
+        self.0.oam[self.0.regs.oam_addr as usize] = val;
+        self.0.regs.oam_addr = self.0.regs.oam_addr.wrapping_add(1);
     }
 
     pub fn write_scroll(&mut self, val: u8) {
