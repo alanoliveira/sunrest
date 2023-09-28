@@ -1,8 +1,8 @@
 #[derive(Debug, Default, Clone, Copy)]
 pub enum SprHeight {
     #[default]
-    Eight,
-    Sixteen,
+    Eight = 8,
+    Sixteen = 16,
 }
 
 impl From<u8> for SprHeight {

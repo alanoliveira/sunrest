@@ -48,7 +48,7 @@ impl Debugger<'_> {
         println!("OAM:");
         for row in 0..8 {
             for col in 0..32 {
-                let sprite = self.0.oam[row * 32 + col];
+                let sprite = self.0.oam.read(row * 32 + col);
                 print!("{:02X} ", sprite);
             }
             println!();

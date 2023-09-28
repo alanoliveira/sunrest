@@ -51,7 +51,7 @@ impl IO<'_> {
     }
 
     fn read_oam_data(&mut self) -> u8 {
-        self.0.oam[self.0.regs.oam_addr as usize]
+        self.0.oam.read(self.0.regs.oam_addr)
     }
 
     pub fn write_ctrl(&mut self, val: u8) {
@@ -94,7 +94,7 @@ impl IO<'_> {
     }
 
     fn write_oam_data(&mut self, val: u8) {
-        self.0.oam[self.0.regs.oam_addr as usize] = val;
+        self.0.oam.write(self.0.regs.oam_addr, val);
         self.0.regs.oam_addr = self.0.regs.oam_addr.wrapping_add(1);
     }
 

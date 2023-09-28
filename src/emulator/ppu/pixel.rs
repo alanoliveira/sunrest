@@ -7,10 +7,10 @@ pub enum Kind {
 
 #[derive(Debug, Default, Copy, Clone, PartialEq, Eq)]
 pub struct Pixel {
-    kind: Kind,
-    palette: u8,
-    color: u8,
-    behind: bool,
+    pub kind: Kind,
+    pub palette: u8,
+    pub color: u8,
+    pub behind: bool,
 }
 
 impl Pixel {
