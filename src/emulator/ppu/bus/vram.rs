@@ -16,6 +16,12 @@ impl Vram {
         self.0[self.resolve_address(addr) as usize]
     }
 
+    pub fn name_table(&self, idx: usize) -> &[u8] {
+        assert!(idx < 4);
+        let start = idx * 0x0400;
+        &self.0[start..start + 0x0400]
+    }
+
     fn resolve_address(&self, addr: u16) -> u16 {
         addr & VRAM_BIT_MASK
     }

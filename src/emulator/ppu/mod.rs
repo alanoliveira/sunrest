@@ -1,3 +1,4 @@
+mod debugger;
 mod io;
 mod registers;
 
@@ -15,6 +16,16 @@ pub struct Ppu {
     pub scanline: usize,
     pub frame: usize,
     pub cycle: usize,
+}
+
+impl std::fmt::Debug for Ppu {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(
+            f,
+            "Ppu {{ ({:03},{:03}) [{}] }}",
+            self.scanline, self.dot, self.frame,
+        )
+    }
 }
 
 impl Ppu {
