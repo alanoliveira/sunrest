@@ -141,6 +141,10 @@ impl ppu::bus::CartridgeIO for PpuCartridge {
     fn read(&self, addr: u16) -> u8 {
         self.0.borrow().read_chr(addr)
     }
+
+    fn write(&self, addr: u16, val: u8) {
+        self.0.borrow_mut().write_chr(addr, val)
+    }
 }
 
 struct CpuCartridge(Rc<RefCell<cartridge::Cartridge>>);

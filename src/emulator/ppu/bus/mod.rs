@@ -58,6 +58,7 @@ impl Bus {
 
     pub fn write(&mut self, addr: u16, val: u8) {
         match addr {
+            CARTRIDGE_START..=CARTRIDGE_END => self.cartridge_io.write(addr - CARTRIDGE_START, val),
             VRAM_START..=VRAM_END => self.vram.write(addr - VRAM_START, val),
             PALLETE_START..=PALLETE_END => self.palette_ram.write(addr - PALLETE_START, val),
             _ => {

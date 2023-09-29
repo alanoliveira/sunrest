@@ -53,12 +53,6 @@ impl INesRomBuilder {
         let chr_banks = data[5] as usize;
         let flags6 = Flags6::from(data[6]);
         let flags7 = Flags7::from(data[7]);
-
-        let mut data_iter = if flags6.has_trainer {
-            data.iter().skip(TRAINER_SIZE)
-        } else {
-            data.iter().skip(16)
-        };
         let mapper_code = (flags7.mapper_hi << 4) | flags6.mapper_lo;
 
         log!("PRG ROM banks: {}", prg_banks);
@@ -66,21 +60,23 @@ impl INesRomBuilder {
         log!("Hardware Mirroring: {:?}", flags6.mirroring);
         log!("Persistent memory: {}", flags6.has_persistent_memory);
         log!("Mapper: {}", mapper_code);
-
-        let prg_size = prg_banks * PRG_ROM_PAGE_SIZE;
-        let prg_data = data_iter.by_ref().take(prg_size).copied().collect();
-
-        let chr_size = chr_banks * CHR_ROM_PAGE_SIZE;
-        let chr_data = data_iter.by_ref().take(chr_size).copied().collect();
-
         if mapper_code != 0 {
             panic!("Mapper {} not supported", mapper_code)
         }
 
-        Cartridge {
-            prg_data,
-            chr_data,
-        }
+        let prg_start = if flags6.has_trainer {
+            TRAINER_SIZE
+        } else {
+            HEADER_SIZE
+        };
+
+        let prg_size = prg_banks * PRG_ROM_PAGE_SIZE;
+        let prg_data = &data[prg_start..(prg_start + prg_size)];
+
+        let chr_size = chr_banks * CHR_ROM_PAGE_SIZE;
+        let chr_data = &data[(prg_start + prg_size)..(prg_start + prg_size + chr_size)];
+
+        Cartridge::new(&prg_data, &chr_data)
     }
 }
 
@@ -106,6 +102,8 @@ mod tests {
         let mut data = vec![0x4E, 0x45, 0x53, 0x1A, 0x02, 0x01, 0x04, 0x00];
         (0..TRAINER_SIZE - data.len()).for_each(|_| data.push(0xFF));
         data.push(0x42);
+        (0..(PRG_ROM_PAGE_SIZE * 2) - 1).for_each(|_| data.push(0xFF));
+        (0..CHR_ROM_PAGE_SIZE).for_each(|_| data.push(0xFF));
 
         let cartridge = INesRomBuilder::build(&data);
         assert_eq!(cartridge.prg_data[0], 0x42);
