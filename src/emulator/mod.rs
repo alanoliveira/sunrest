@@ -1,3 +1,6 @@
+#[cfg(test)]
+mod tests;
+
 mod bus;
 mod cartridge;
 mod cpu;
