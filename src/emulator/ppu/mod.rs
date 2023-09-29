@@ -95,10 +95,8 @@ impl Ppu {
 
     fn visible_line(&mut self) {
         if self.dot > 0 && self.dot <= 256 {
-            let bg_pixel = self
-                .background
-                .next_pixel(self.regs.scroll.x.fine() as usize);
-            let spr_pixel = self.foreground.next_pixel().unwrap_or_default();
+            let bg_pixel = self.background.pixel_at(self.regs.scroll.x.fine());
+            let spr_pixel = self.foreground.cur_pixel().unwrap_or_default();
 
             let x = self.dot - 1;
             let show_bg =
@@ -115,11 +113,13 @@ impl Ppu {
                 Pixel::default()
             };
             self.color_idx = self.bus.read_palette(pixel.address()) as usize;
+
+            self.background.shift();
+            self.foreground.shift();
         }
 
         if self.dot > 320 && self.dot <= 336 {
-            self.background
-                .next_pixel(self.regs.scroll.x.fine() as usize);
+            self.background.shift();
         }
 
         self.background_preparation();

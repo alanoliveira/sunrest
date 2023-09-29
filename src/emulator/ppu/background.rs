@@ -3,9 +3,10 @@ use super::*;
 const BUFFER_SIZE: usize = 16;
 
 pub struct Background {
-    pixels: [Pixel; BUFFER_SIZE],
-    head: usize,
-    tail: usize,
+    pattern_hi: u16,
+    pattern_lo: u16,
+    palette_hi: u16,
+    palette_lo: u16,
 
     pub tmp_tile_idx: u8,
     pub tmp_palette: u8,
@@ -13,12 +14,42 @@ pub struct Background {
     pub tmp_pattern_lo: u8,
 }
 
+impl std::fmt::Debug for Background {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        if f.alternate() {
+            write!(
+                f,
+                "[ {:016b} {:016b} {:016b} {:016b} ]",
+                self.pattern_hi, self.pattern_lo, self.palette_hi, self.palette_lo
+            )
+        } else {
+            f.debug_struct("Background")
+                .field("pattern_hi", &format_args!("{:#016b}", self.pattern_hi))
+                .field("pattern_lo", &format_args!("{:#016b}", self.pattern_lo))
+                .field("palette_hi", &format_args!("{:#016b}", self.palette_hi))
+                .field("palette_lo", &format_args!("{:#016b}", self.palette_lo))
+                .field("tmp_tile_idx", &format_args!("{:02X}", self.tmp_tile_idx))
+                .field("tmp_palette", &format_args!("{:02X}", self.tmp_palette))
+                .field(
+                    "tmp_pattern_hi",
+                    &format_args!("{:02X}", self.tmp_pattern_hi),
+                )
+                .field(
+                    "tmp_pattern_lo",
+                    &format_args!("{:02X}", self.tmp_pattern_lo),
+                )
+                .finish()
+        }
+    }
+}
+
 impl Background {
     pub fn new() -> Self {
         Self {
-            pixels: [Pixel::default(); BUFFER_SIZE],
-            head: 0,
-            tail: 0,
+            pattern_hi: 0,
+            pattern_lo: 0,
+            palette_hi: 0,
+            palette_lo: 0,
 
             tmp_tile_idx: 0,
             tmp_palette: 0,
@@ -28,34 +59,53 @@ impl Background {
     }
 
     pub fn load(&mut self) {
-        let mut pattern_hi = self.tmp_pattern_hi;
-        let mut pattern_lo = self.tmp_pattern_lo;
+        self.pattern_hi =
+            (self.pattern_hi & 0x00FF) | (self.tmp_pattern_hi.reverse_bits() as u16) << 8;
+        self.pattern_lo =
+            (self.pattern_lo & 0x00FF) | (self.tmp_pattern_lo.reverse_bits() as u16) << 8;
 
-        self.tail = (self.head + 8) % BUFFER_SIZE;
-        for _ in 0..8 {
-            let color = ((pattern_hi & 0x80) >> 6) | ((pattern_lo & 0x80) >> 7);
-            pattern_hi <<= 1;
-            pattern_lo <<= 1;
-            let pixel = Pixel::new(PixelKind::Background, self.tmp_palette, color, false);
-            self.add_pixel(pixel);
-        }
+        let pal = self.tmp_palette;
+        self.palette_hi = (self.palette_hi & 0x00FF) | if pal & 0b10 != 0 { 0xFF00 } else { 0x00 };
+        self.palette_lo = (self.palette_lo & 0x00FF) | if pal & 0b01 != 0 { 0xFF00 } else { 0x00 };
     }
 
-    pub fn next_pixel(&mut self, offset: usize) -> Pixel {
-        let index = (self.head + offset) % BUFFER_SIZE;
-        self.head = (self.head + 1) % BUFFER_SIZE;
-        self.pixels[index]
+    pub fn pixel_at(&mut self, offset: u8) -> Pixel {
+        let offset = offset as u16;
+        Pixel::new(
+            PixelKind::Background,
+            self.palette(offset),
+            self.color(offset),
+            false,
+        )
     }
 
-    fn add_pixel(&mut self, pixel: Pixel) {
-        self.pixels[self.tail] = pixel;
-        self.tail = (self.tail + 1) % BUFFER_SIZE;
+    fn color(&self, offset: u16) -> u8 {
+        let hi = (self.pattern_hi >> offset) & 0x01;
+        let lo = (self.pattern_lo >> offset) & 0x01;
+        (hi as u8) << 1 | lo as u8
+    }
+
+    fn palette(&self, offset: u16) -> u8 {
+        let hi = (self.palette_hi >> offset) & 0x01;
+        let lo = (self.palette_lo >> offset) & 0x01;
+        (hi as u8) << 1 | lo as u8
+    }
+
+    pub fn shift(&mut self) {
+        self.pattern_hi >>= 1;
+        self.pattern_lo >>= 1;
+        self.palette_hi >>= 1;
+        self.palette_lo >>= 1;
     }
 }
 
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    fn mk_pixel(pal: u8, col: u8) -> Pixel {
+        Pixel::new(PixelKind::Background, pal, col, false)
+    }
 
     #[test]
     fn test_bg_pixels() {
@@ -66,25 +116,33 @@ mod tests {
         bg_pixels.tmp_palette = 0b0000_0011;
         bg_pixels.load();
 
-        for _ in 0..8 {
-            assert_eq!(bg_pixels.next_pixel(0), Pixel::default());
+        for _ in 0..6 {
+            bg_pixels.shift();
         }
-        assert_eq!(bg_pixels.next_pixel(0), Pixel::new(PixelKind::Background, 3, 3, false));
-        assert_eq!(bg_pixels.next_pixel(0), Pixel::new(PixelKind::Background, 3, 1, false));
-        assert_eq!(bg_pixels.next_pixel(2), Pixel::new(PixelKind::Background, 3, 2, false));
-        assert_eq!(bg_pixels.next_pixel(2), Pixel::new(PixelKind::Background, 3, 0, false));
+
         bg_pixels.tmp_pattern_hi = 0b1111_0000;
         bg_pixels.tmp_pattern_lo = 0b1010_1010;
         bg_pixels.tmp_palette = 0b0000_0010;
         bg_pixels.load();
-        assert_eq!(bg_pixels.next_pixel(0), Pixel::new(PixelKind::Background, 3, 2, false));
-        assert_eq!(bg_pixels.next_pixel(0), Pixel::new(PixelKind::Background, 3, 0, false));
-        assert_eq!(bg_pixels.next_pixel(0), Pixel::new(PixelKind::Background, 3, 2, false));
-        assert_eq!(bg_pixels.next_pixel(0), Pixel::new(PixelKind::Background, 3, 0, false));
-        for _ in 0..4 {
-            assert_eq!(bg_pixels.next_pixel(0), Pixel::default());
+
+        for _ in 0..2 {
+            bg_pixels.shift();
         }
-        assert_eq!(bg_pixels.next_pixel(0), Pixel::new(PixelKind::Background, 2, 3, false));
-        assert_eq!(bg_pixels.next_pixel(0), Pixel::new(PixelKind::Background, 2, 2, false));
+
+        assert_eq!(bg_pixels.pixel_at(0), mk_pixel(3, 3));
+        assert_eq!(bg_pixels.pixel_at(1), mk_pixel(3, 1));
+        assert_eq!(bg_pixels.pixel_at(2), mk_pixel(3, 3));
+        assert_eq!(bg_pixels.pixel_at(3), mk_pixel(3, 1));
+        assert_eq!(bg_pixels.pixel_at(4), mk_pixel(3, 2));
+        assert_eq!(bg_pixels.pixel_at(5), mk_pixel(3, 0));
+        assert_eq!(bg_pixels.pixel_at(6), mk_pixel(2, 3));
+        assert_eq!(bg_pixels.pixel_at(7), mk_pixel(2, 2));
+        assert_eq!(bg_pixels.pixel_at(8), mk_pixel(2, 3));
+        assert_eq!(bg_pixels.pixel_at(9), mk_pixel(2, 2));
+        assert_eq!(bg_pixels.pixel_at(10), mk_pixel(2, 1));
+        assert_eq!(bg_pixels.pixel_at(11), mk_pixel(2, 0));
+        assert_eq!(bg_pixels.pixel_at(12), mk_pixel(2, 1));
+        assert_eq!(bg_pixels.pixel_at(13), mk_pixel(2, 0));
+        assert_eq!(bg_pixels.pixel_at(14), mk_pixel(0, 0));
     }
 }
