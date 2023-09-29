@@ -5,9 +5,13 @@ mod oam_dma;
 mod ppu;
 mod video;
 
-use std::{cell::RefCell, rc::Rc};
+pub mod input_devices;
 
 pub use video::{Color, Signal as VideoSignal};
+
+use input_devices::InputDevice;
+
+use std::{cell::RefCell, rc::Rc};
 
 pub struct Emulator {
     cpu: cpu::Cpu<bus::Bus>,
@@ -52,6 +56,22 @@ impl Emulator {
             x: ppu.dot.wrapping_sub(1),
             y: ppu.scanline,
             color: self.color_palette[ppu.color_idx],
+        }
+    }
+
+    pub fn clock_input_devices(&mut self, dev1: &mut dyn InputDevice, dev2: &mut dyn InputDevice) {
+        if let Some(input_ctrl) = self.cpu.io.input_ctrl_write.take() {
+            dev1.write(input_ctrl);
+            self.cpu.io.device1_state.replace(None);
+            dev2.write(input_ctrl);
+            self.cpu.io.device2_state.replace(None);
+        } else {
+            if self.cpu.io.device1_state.get().is_none() {
+                self.cpu.io.device1_state.replace(Some(dev1.read()));
+            }
+            if self.cpu.io.device2_state.get().is_none() {
+                self.cpu.io.device2_state.replace(Some(dev2.read()));
+            }
         }
     }
 

@@ -116,6 +116,50 @@ impl UiEngine for SdlEngine {
                     keycode: Some(Keycode::Escape),
                     ..
                 } => event_buffer.push(UiEvent::Quit),
+
+                Event::KeyDown {
+                    keycode: Some(keycode),
+                    ..
+                }
+                | Event::KeyUp {
+                    keycode: Some(keycode),
+                    ..
+                } => {
+                    let state = if matches!(event, Event::KeyDown { .. }) {
+                        ButtonState::Pressed
+                    } else {
+                        ButtonState::Released
+                    };
+                    let joypad_button_evt = match keycode {
+                        // Joypad 1
+                        Keycode::W => Some((0, JoypadButton::Up)),
+                        Keycode::A => Some((0, JoypadButton::Left)),
+                        Keycode::S => Some((0, JoypadButton::Down)),
+                        Keycode::D => Some((0, JoypadButton::Right)),
+                        Keycode::J => Some((0, JoypadButton::A)),
+                        Keycode::K => Some((0, JoypadButton::B)),
+                        Keycode::Return => Some((0, JoypadButton::Start)),
+                        Keycode::Backspace => Some((0, JoypadButton::Select)),
+
+                        // Joypad 2
+                        // Keycode::Up => Some((1, JoypadButton::Up)),
+                        // Keycode::Left => Some((1, JoypadButton::Left)),
+                        // Keycode::Down => Some((1, JoypadButton::Down)),
+                        // Keycode::Right => Some((1, JoypadButton::Right)),
+                        // Keycode::Z => Some((1, JoypadButton::A)),
+                        // Keycode::X => Some((1, JoypadButton::B)),
+                        // Keycode::C => Some((1, JoypadButton::Start)),
+                        // Keycode::V => Some((1, JoypadButton::Select)),
+                        _ => None,
+                    };
+                    if let Some((side, button)) = joypad_button_evt {
+                        event_buffer.push(UiEvent::InputEvent {
+                            side,
+                            button,
+                            state,
+                        })
+                    }
+                }
                 _ => {}
             }
         }

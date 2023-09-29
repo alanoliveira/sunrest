@@ -11,8 +11,29 @@ enum UiState {
     Quit,
 }
 
+pub enum JoypadButton {
+    A,
+    B,
+    Select,
+    Start,
+    Up,
+    Down,
+    Left,
+    Right,
+}
+
+pub enum ButtonState {
+    Pressed,
+    Released,
+}
+
 pub enum UiEvent {
     Quit,
+    InputEvent {
+        side: usize,
+        button: JoypadButton,
+        state: ButtonState,
+    },
 }
 
 pub struct Ui<E: engines::UiEngine> {
@@ -20,6 +41,9 @@ pub struct Ui<E: engines::UiEngine> {
     engine: E,
     event_buffer: Vec<UiEvent>,
     state: UiState,
+
+    joypad1: emulator::input_devices::StandardJoypad,
+    joypad2: emulator::input_devices::StandardJoypad,
 }
 
 impl<E: engines::UiEngine> Ui<E> {
@@ -32,12 +56,18 @@ impl<E: engines::UiEngine> Ui<E> {
             engine,
             event_buffer: Vec::new(),
             state: UiState::Running,
+
+            joypad1: emulator::input_devices::StandardJoypad::new(),
+            joypad2: emulator::input_devices::StandardJoypad::new(),
         }
     }
 
     pub fn run(&mut self) {
         while self.state == UiState::Running {
             self.emulator.clock();
+            self.emulator
+                .clock_input_devices(&mut self.joypad1, &mut self.joypad2);
+
             let video_signal = self.emulator.video_signal();
             self.draw_point(video_signal.x, video_signal.y, video_signal.color);
 
@@ -53,6 +83,33 @@ impl<E: engines::UiEngine> Ui<E> {
         for event in self.event_buffer.drain(..) {
             match event {
                 UiEvent::Quit => self.state = UiState::Quit,
+                UiEvent::InputEvent {
+                    side,
+                    button,
+                    state,
+                } => {
+                    let joypad = match side {
+                        0 => &mut self.joypad1,
+                        1 => &mut self.joypad2,
+                        _ => panic!("Invalid joypad side"),
+                    };
+
+                    let button_state = match state {
+                        ButtonState::Pressed => true,
+                        ButtonState::Released => false,
+                    };
+
+                    match button {
+                        JoypadButton::A => joypad.a = button_state,
+                        JoypadButton::B => joypad.b = button_state,
+                        JoypadButton::Select => joypad.select = button_state,
+                        JoypadButton::Start => joypad.start = button_state,
+                        JoypadButton::Up => joypad.up = button_state,
+                        JoypadButton::Down => joypad.down = button_state,
+                        JoypadButton::Left => joypad.left = button_state,
+                        JoypadButton::Right => joypad.right = button_state,
+                    }
+                }
             }
         }
     }
