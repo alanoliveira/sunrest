@@ -9,12 +9,11 @@ struct SpritePixels {
 }
 
 impl SpritePixels {
-    fn color(&self) -> u8 {
-        ((self.hi & 0x01) << 1) | (self.lo & 0x01)
-    }
-
-    fn is_visible(&self) -> bool {
-        self.x == 0 && self.color() != 0
+    fn color(&self, offset: usize) -> u8 {
+        if offset >= 8 {
+            return 0;
+        }
+        (((self.hi >> offset) & 0x01) << 1) | ((self.lo >> offset) & 0x01)
     }
 }
 
@@ -54,32 +53,22 @@ impl Foreground {
         });
     }
 
-    pub fn cur_pixel(&mut self) -> Option<Pixel> {
+    pub fn pixel_at(&mut self, x: usize) -> Option<Pixel> {
         self.zero_fetch = false;
         self.spr_pixels.iter().enumerate().find_map(|(i, p)| {
-            if p.x == 0 && p.color() != 0 {
+            let offset = x.wrapping_sub(p.x);
+            if p.color(offset) != 0 {
                 self.zero_fetch = i == 0;
                 Some(Pixel::new(
                     PixelKind::Sprite,
                     p.palette,
-                    p.color(),
+                    p.color(offset),
                     p.behind,
                 ))
             } else {
                 None
             }
         })
-    }
-
-    pub fn shift(&mut self) {
-        self.spr_pixels.iter_mut().for_each(|p| {
-            if p.x > 0 {
-                p.x -= 1;
-            } else {
-                p.hi >>= 1;
-                p.lo >>= 1;
-            }
-        });
     }
 }
 
@@ -124,24 +113,19 @@ mod tests {
         spr_pixels.load(mk_spr(1, false, false, 0), 0b00001010, 0b00001110);
         spr_pixels.load(mk_spr(12, false, false, 2), 0b11010101, 0b01110111);
 
-        let mut get_n_shift = || {
-            let pix = spr_pixels.cur_pixel();
-            spr_pixels.shift();
-            pix
-        };
-
-        assert_eq!(get_n_shift(), Some(mk_pixel(1, 3, true)));
-        assert_eq!(get_n_shift(), Some(mk_pixel(1, 1, true)));
-        assert_eq!(get_n_shift(), Some(mk_pixel(1, 3, true)));
-        assert_eq!(get_n_shift(), None);
-        assert_eq!(get_n_shift(), Some(mk_pixel(1, 3, true)));
-        assert_eq!(get_n_shift(), Some(mk_pixel(1, 1, true)));
-        assert_eq!(get_n_shift(), Some(mk_pixel(1, 3, true)));
-        assert_eq!(get_n_shift(), Some(mk_pixel(0, 3, false)));
-        for _ in 0..4 {
-            assert_eq!(get_n_shift(), None);
-        }
-        assert_eq!(get_n_shift(), Some(mk_pixel(2, 2, false)));
-        assert_eq!(get_n_shift(), Some(mk_pixel(2, 3, false)));
+        assert_eq!(spr_pixels.pixel_at(0), Some(mk_pixel(1, 3, true)));
+        assert_eq!(spr_pixels.pixel_at(1), Some(mk_pixel(1, 1, true)));
+        assert_eq!(spr_pixels.pixel_at(2), Some(mk_pixel(1, 3, true)));
+        assert_eq!(spr_pixels.pixel_at(3), None);
+        assert_eq!(spr_pixels.pixel_at(4), Some(mk_pixel(1, 3, true)));
+        assert_eq!(spr_pixels.pixel_at(5), Some(mk_pixel(1, 1, true)));
+        assert_eq!(spr_pixels.pixel_at(6), Some(mk_pixel(1, 3, true)));
+        assert_eq!(spr_pixels.pixel_at(7), Some(mk_pixel(0, 3, false)));
+        assert_eq!(spr_pixels.pixel_at(8), None);
+        assert_eq!(spr_pixels.pixel_at(9), None);
+        assert_eq!(spr_pixels.pixel_at(10), None);
+        assert_eq!(spr_pixels.pixel_at(11), None);
+        assert_eq!(spr_pixels.pixel_at(12), Some(mk_pixel(2, 2, false)));
+        assert_eq!(spr_pixels.pixel_at(13), Some(mk_pixel(2, 3, false)));
     }
 }

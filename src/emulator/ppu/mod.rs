@@ -95,35 +95,13 @@ impl Ppu {
 
     fn visible_line(&mut self) {
         if self.dot > 0 && self.dot <= 256 {
-            let bg_pixel = self.background.pixel_at(self.regs.scroll.x.fine());
-            let spr_pixel = self.foreground.cur_pixel().unwrap_or_default();
-
-            let x = self.dot - 1;
-            let show_bg =
-                self.regs.show_bg && (!self.regs.clip_bg || x > 7) && bg_pixel.is_visible();
-            let show_spr =
-                self.regs.show_spr && (!self.regs.clip_spr || x > 7) && spr_pixel.is_visible();
-
-            let pixel = if show_spr && !(show_bg && spr_pixel.behind) {
-                self.regs.spr0_hit |= self.regs.spr0_found && self.foreground.zero_fetch;
-                spr_pixel
-            } else if show_bg {
-                bg_pixel
-            } else {
-                Pixel::default()
-            };
-            self.color_idx = self.bus.read_palette(pixel.address()) as usize;
-
-            self.background.shift();
-            self.foreground.shift();
+            self.pixel_preparation();
         }
 
-        if self.dot > 320 && self.dot <= 336 {
-            self.background.shift();
+        if self.regs.render_enabled() {
+            self.background_preparation();
+            self.sprites_preparation();
         }
-
-        self.background_preparation();
-        self.sprites_preparation();
     }
 
     fn vblank_start_line(&mut self) {
@@ -133,7 +111,9 @@ impl Ppu {
     }
 
     fn pre_render_line(&mut self) {
-        self.background_preparation();
+        if self.regs.render_enabled() {
+            self.background_preparation();
+        }
 
         match self.dot {
             1 => {
@@ -141,6 +121,7 @@ impl Ppu {
                 self.regs.spr0_hit = false;
                 self.regs.spr_overflow = false;
             }
+            66 => self.regs.spr0_found = false,
             _ => (),
         }
 
@@ -149,9 +130,40 @@ impl Ppu {
         }
     }
 
+    fn pixel_preparation(&mut self) {
+        let x = self.dot - 1;
+
+        let bg_pixel = self.background.pixel_at(self.regs.scroll.x.fine());
+        let spr_pixel = self.foreground.pixel_at(self.dot - 1).unwrap_or_default();
+
+        let show_bg = self.regs.show_bg && (!self.regs.clip_bg || x > 7);
+        let show_spr = self.regs.show_spr && (!self.regs.clip_spr || x > 7);
+        let bg_visible = show_bg && bg_pixel.is_visible();
+        let spr_visible = show_spr && spr_pixel.is_visible();
+
+        let pixel = if spr_visible && !(bg_visible && spr_pixel.behind) {
+            spr_pixel
+        } else if bg_visible {
+            bg_pixel
+        } else {
+            Pixel::default()
+        };
+        self.color_idx = self.bus.read_palette(pixel.address()) as usize;
+
+        if !self.regs.spr0_hit
+            && self.regs.spr0_found
+            && self.foreground.zero_fetch
+            && bg_visible
+            && spr_visible
+            && x != 255
+        {
+            self.regs.spr0_hit = true;
+        }
+    }
+
     fn background_preparation(&mut self) {
-        if !self.regs.render_enabled() {
-            return;
+        if self.dot > 0 && self.dot <= 256 || self.dot > 320 && self.dot <= 336 {
+            self.background.shift();
         }
 
         if matches!(self.dot, 1..=256 | 321..=336) {
@@ -205,6 +217,7 @@ impl Ppu {
                         self.regs.spr_overflow = true;
                         break;
                     }
+
                     self.sprites.push(spr);
                     self.regs.spr0_found |= i == 0;
                 }

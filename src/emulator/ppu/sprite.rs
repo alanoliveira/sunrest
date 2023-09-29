@@ -1,9 +1,20 @@
-#[derive(Debug, Default, Clone, Copy)]
+#[derive(Debug, Clone, Copy)]
 pub struct RawSprite {
     pub attr: Attributes,
     pub x: u8,
     pub y: u8,
     pub tile: u8,
+}
+
+impl Default for RawSprite {
+    fn default() -> Self {
+        Self {
+            attr: 0xFF.into(),
+            x: 0xFF,
+            y: 0xFF,
+            tile: 0xFF,
+        }
+    }
 }
 
 impl RawSprite {
