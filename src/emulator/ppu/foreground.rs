@@ -16,17 +16,20 @@ impl SpritePixels {
 
 pub struct Foreground {
     spr_pixels: Vec<SpritePixels>,
+    pub zero_fetch: bool,
 }
 
 impl Foreground {
     pub fn new() -> Self {
         Self {
             spr_pixels: Vec::with_capacity(MAX_VISIBLE_SPRITES),
+            zero_fetch: false,
         }
     }
 
     pub fn clear(&mut self) {
         self.spr_pixels.clear();
+        self.zero_fetch = false;
     }
 
     pub fn load(&mut self, sprite: RawSprite, pattern_hi: u8, pattern_lo: u8) {
@@ -48,12 +51,20 @@ impl Foreground {
     }
 
     pub fn next_pixel(&mut self) -> Option<Pixel> {
-        let pixel = self
-            .spr_pixels
-            .iter()
-            .filter(|p| p.x == 0)
-            .map(|p| Pixel::new(PixelKind::Sprite, p.palette, p.color(), p.behind))
-            .find(|p| p.is_visible());
+        self.zero_fetch = false;
+        let pixel = self.spr_pixels.iter().enumerate().find_map(|(i, p)| {
+            if p.x == 0 && p.color() != 0 {
+                self.zero_fetch = i == 0;
+                Some(Pixel::new(
+                    PixelKind::Sprite,
+                    p.palette,
+                    p.color(),
+                    p.behind,
+                ))
+            } else {
+                None
+            }
+        });
         self.shift();
         pixel
     }

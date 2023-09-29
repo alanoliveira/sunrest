@@ -34,6 +34,7 @@ pub struct Registers {
     pub show_spr: bool,
 
     pub spr0_hit: bool,
+    pub spr0_found: bool,
     pub spr_overflow: bool,
     pub vblank: Vblank,
     pub nmi_enabled: bool,

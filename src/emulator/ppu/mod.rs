@@ -107,6 +107,7 @@ impl Ppu {
                 self.regs.show_spr && (!self.regs.clip_spr || x > 7) && spr_pixel.is_visible();
 
             let pixel = if show_spr && !(show_bg && spr_pixel.behind) {
+                self.regs.spr0_hit |= self.regs.spr0_found && self.foreground.zero_fetch;
                 spr_pixel
             } else if show_bg {
                 bg_pixel
@@ -135,7 +136,11 @@ impl Ppu {
         self.background_preparation();
 
         match self.dot {
-            1 => self.regs.stop_vblank(),
+            1 => {
+                self.regs.stop_vblank();
+                self.regs.spr0_hit = false;
+                self.regs.spr_overflow = false;
+            }
             _ => (),
         }
 
@@ -190,7 +195,8 @@ impl Ppu {
         match self.dot {
             64 => self.sprites.clear(),
             256 => {
-                for spr in self.oam.sprites_iter() {
+                self.regs.spr0_found = false;
+                for (i, spr) in self.oam.sprites_iter().enumerate() {
                     if !self.is_spr_visible(spr) {
                         continue;
                     }
@@ -200,6 +206,7 @@ impl Ppu {
                         break;
                     }
                     self.sprites.push(spr);
+                    self.regs.spr0_found |= i == 0;
                 }
             }
             263 => self.foreground.clear(),
