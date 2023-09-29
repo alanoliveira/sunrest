@@ -43,11 +43,16 @@ impl IO<'_> {
     }
 
     pub fn read_data(&mut self) -> u8 {
-        let ret = self.0.regs.vram_data;
         let addr = self.0.regs.vram_addr.get();
-        self.0.regs.vram_data = self.0.bus.read(addr);
+        let mut data = self.0.bus.read(addr);
+
+        match addr {
+            0x3F00..=0x3FFF => self.0.regs.vram_data = self.0.bus.read(addr - 0x1000),
+            _ => std::mem::swap(&mut self.0.regs.vram_data, &mut data),
+        }
+
         self.0.regs.increment_vram_address();
-        ret
+        data
     }
 
     fn read_oam_data(&mut self) -> u8 {
