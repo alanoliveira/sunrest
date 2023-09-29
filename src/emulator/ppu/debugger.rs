@@ -80,8 +80,8 @@ impl Debugger<'_> {
 
     pub fn print_pattern_row(&self, table: usize, pattern: (usize, usize), row: usize) {
         let mut pattern_addr = 0x1000 * table;
-        pattern_addr += pattern.0 * 16;
-        pattern_addr += pattern.1 * 16 * 16;
+        pattern_addr += pattern.1 * 16;
+        pattern_addr += pattern.0 * 16 * 16;
         self.print_pattern_row_by_tile_addr(pattern_addr as u16, row);
     }
 }
