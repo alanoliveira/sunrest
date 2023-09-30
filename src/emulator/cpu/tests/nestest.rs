@@ -1,7 +1,7 @@
 use super::{Status as S, *};
 
 struct NestestIO([u8; 0x10000]);
-impl IO for NestestIO {
+impl Memory for NestestIO {
     fn read(&self, addr: u16) -> u8 {
         let addr = match addr {
             0xC000..=0xFFFF => addr - 0x4000,
@@ -38,8 +38,8 @@ fn nestest_test() {
         }
     }
 
-    let ret1 = cpu.io.read(0x00);
-    let ret2 = cpu.io.read(0x02);
+    let ret1 = cpu.mem.read(0x00);
+    let ret2 = cpu.mem.read(0x02);
     if ret1 | ret2 != 0x00 {
         panic!("Nestest failed: {:02X} {:02X}", ret1, ret2);
     }

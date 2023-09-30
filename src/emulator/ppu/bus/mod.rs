@@ -4,6 +4,8 @@ mod vram;
 
 pub use cartridge_io::*;
 
+use super::*;
+
 const CARTRIDGE_START: u16 = 0x0000;
 const CARTRIDGE_END: u16 = 0x1FFF;
 
@@ -12,10 +14,6 @@ const VRAM_END: u16 = 0x3EFF;
 
 const PALLETE_START: u16 = 0x3F00;
 const PALLETE_END: u16 = 0x3FFF;
-
-const NAMETABLE_BASE_ADDR: u16 = 0x2000;
-const ATTRIBUTE_BASE_ADDR: u16 = 0x23C0;
-const PALETTE_BASE_ADDR: u16 = 0x3F00;
 
 pub struct Bus {
     pub vram: vram::Vram,
@@ -30,18 +28,6 @@ impl Bus {
             palette_ram: palette_ram::PaletteRam::new(),
             cartridge_io,
         }
-    }
-
-    pub fn read_nametable(&self, addr: u16) -> u8 {
-        self.read(NAMETABLE_BASE_ADDR | addr)
-    }
-
-    pub fn read_attribute(&self, addr: u16) -> u8 {
-        self.read(ATTRIBUTE_BASE_ADDR | addr)
-    }
-
-    pub fn read_palette(&self, addr: u16) -> u8 {
-        self.read(PALETTE_BASE_ADDR | addr)
     }
 
     pub fn read(&self, addr: u16) -> u8 {
@@ -65,5 +51,15 @@ impl Bus {
                 log!("Attempted to write to unmapped PPU address: {addr:04X}");
             }
         }
+    }
+}
+
+impl Memory for Bus {
+    fn read(&self, addr: u16) -> u8 {
+        self.read(addr)
+    }
+
+    fn write(&mut self, addr: u16, val: u8) {
+        self.write(addr, val)
     }
 }

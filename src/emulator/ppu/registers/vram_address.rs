@@ -6,12 +6,12 @@ impl std::fmt::Debug for VramAddress {
         if f.alternate() {
             write!(
                 f,
-                "{:016b} (coarse_x: {}, coarse_y: {}, name_table_h: {}, name_table_v: {}, fine_y: {})",
+                "{:016b} (coarse_x: {}, coarse_y: {}, nametable_h: {}, nametable_v: {}, fine_y: {})",
                 self.0,
                 self.coarse_x(),
                 self.coarse_y(),
-                self.name_table_h(),
-                self.name_table_v(),
+                self.nametable_h(),
+                self.nametable_v(),
                 self.fine_y(),
             )
         } else {
@@ -23,8 +23,8 @@ impl std::fmt::Debug for VramAddress {
 impl VramAddress {
     const COARSE_X: u16 = 0b0000_0000_0001_1111;
     const COARSE_Y: u16 = 0b0000_0011_1110_0000;
-    const NAME_TABLE_H: u16 = 0b0000_0100_0000_0000;
-    const NAME_TABLE_V: u16 = 0b0000_1000_0000_0000;
+    const NAMETABLE_H: u16 = 0b0000_0100_0000_0000;
+    const NAMETABLE_V: u16 = 0b0000_1000_0000_0000;
     const FINE_Y: u16 = 0b0111_0000_0000_0000;
 
     pub fn get(&self) -> u16 {
@@ -35,20 +35,6 @@ impl VramAddress {
         self.0 = val;
     }
 
-    pub fn tile(&self) -> u16 {
-        self.get() & 0x0FFF
-    }
-
-    pub fn attribute(&self) -> u16 {
-        (self.name_table() as u16) << 10
-            | (self.coarse_x() as u16) >> 2
-            | ((self.coarse_y() as u16) & !0x3) << 1
-    }
-
-    pub fn palette_shift(&self) -> u8 {
-        ((self.coarse_y() & 0x02) << 1) | (self.coarse_x() & 0x02)
-    }
-
     pub fn coarse_x(&self) -> u8 {
         get_val(self.0, Self::COARSE_X) as u8
     }
@@ -57,16 +43,16 @@ impl VramAddress {
         get_val(self.0, Self::COARSE_Y) as u8
     }
 
-    pub fn name_table_h(&self) -> u8 {
-        get_val(self.0, Self::NAME_TABLE_H) as u8
+    pub fn nametable_h(&self) -> u8 {
+        get_val(self.0, Self::NAMETABLE_H) as u8
     }
 
-    pub fn name_table_v(&self) -> u8 {
-        get_val(self.0, Self::NAME_TABLE_V) as u8
+    pub fn nametable_v(&self) -> u8 {
+        get_val(self.0, Self::NAMETABLE_V) as u8
     }
 
-    pub fn name_table(&self) -> u8 {
-        get_val(self.0, Self::NAME_TABLE_H | Self::NAME_TABLE_V) as u8
+    pub fn nametable(&self) -> u8 {
+        get_val(self.0, Self::NAMETABLE_H | Self::NAMETABLE_V) as u8
     }
 
     pub fn fine_y(&self) -> u8 {
@@ -81,16 +67,16 @@ impl VramAddress {
         self.0 = set_val(self.0, Self::COARSE_Y, val as u16);
     }
 
-    pub fn set_name_table_h(&mut self, val: u8) {
-        self.0 = set_val(self.0, Self::NAME_TABLE_H, val as u16);
+    pub fn set_nametable_h(&mut self, val: u8) {
+        self.0 = set_val(self.0, Self::NAMETABLE_H, val as u16);
     }
 
-    pub fn set_name_table_v(&mut self, val: u8) {
-        self.0 = set_val(self.0, Self::NAME_TABLE_V, val as u16);
+    pub fn set_nametable_v(&mut self, val: u8) {
+        self.0 = set_val(self.0, Self::NAMETABLE_V, val as u16);
     }
 
-    pub fn set_name_table(&mut self, val: u8) {
-        self.0 = set_val(self.0, Self::NAME_TABLE_H | Self::NAME_TABLE_V, val as u16);
+    pub fn set_nametable(&mut self, val: u8) {
+        self.0 = set_val(self.0, Self::NAMETABLE_H | Self::NAMETABLE_V, val as u16);
     }
 
     pub fn set_fine_y(&mut self, val: u8) {
@@ -113,7 +99,7 @@ impl VramAddress {
         let mut coarse_x = self.coarse_x() + 1;
         if coarse_x == 32 {
             coarse_x = 0;
-            self.set_name_table_h(self.name_table_h() ^ 1);
+            self.set_nametable_h(self.nametable_h() ^ 1);
         }
         self.set_coarse_x(coarse_x);
     }
@@ -125,7 +111,7 @@ impl VramAddress {
             let mut coarse_y = self.coarse_y() + 1;
             if coarse_y == 30 {
                 coarse_y = 0;
-                self.set_name_table_v(self.name_table_v() ^ 1);
+                self.set_nametable_v(self.nametable_v() ^ 1);
             } else if coarse_y == 32 {
                 coarse_y = 0;
             }
@@ -161,43 +147,6 @@ mod tests {
     }
 
     #[test]
-    fn test_tile() {
-        assert_eq!(VramAddress(0x0321).tile(), 0x0321);
-        assert_eq!(VramAddress(0x00C5).tile(), 0x00C5);
-        assert_eq!(VramAddress(0xFFFF).tile(), 0x0FFF);
-    }
-
-    #[test]
-    fn test_attribute() {
-        assert_eq!(VramAddress(0x0000).attribute(), 0x0000); // x=0, y=0
-        assert_eq!(VramAddress(0x0004).attribute(), 0x0001); // x=4, y=0
-        assert_eq!(VramAddress(0x0044).attribute(), 0x0001); // x=4, y=2
-        assert_eq!(VramAddress(0x010A).attribute(), 0x0012); // x=10, y=8
-        assert_eq!(VramAddress(0x01EF).attribute(), 0x001B); // x=15, y=15
-        assert_eq!(VramAddress(0x03BF).attribute(), 0x003F); // x=31, y=29
-    }
-
-    #[test]
-    fn test_palette() {
-        assert_eq!(VramAddress(0x0000).palette_shift(), 0);
-        assert_eq!(VramAddress(0x0001).palette_shift(), 0);
-        assert_eq!(VramAddress(0x0020).palette_shift(), 0);
-        assert_eq!(VramAddress(0x0021).palette_shift(), 0);
-        assert_eq!(VramAddress(0x0002).palette_shift(), 2);
-        assert_eq!(VramAddress(0x0022).palette_shift(), 2);
-        assert_eq!(VramAddress(0x0003).palette_shift(), 2);
-        assert_eq!(VramAddress(0x0023).palette_shift(), 2);
-        assert_eq!(VramAddress(0x0040).palette_shift(), 4);
-        assert_eq!(VramAddress(0x0060).palette_shift(), 4);
-        assert_eq!(VramAddress(0x0041).palette_shift(), 4);
-        assert_eq!(VramAddress(0x0061).palette_shift(), 4);
-        assert_eq!(VramAddress(0x0042).palette_shift(), 6);
-        assert_eq!(VramAddress(0x0043).palette_shift(), 6);
-        assert_eq!(VramAddress(0x0062).palette_shift(), 6);
-        assert_eq!(VramAddress(0x0063).palette_shift(), 6);
-    }
-
-    #[test]
     fn test_coarse_x() {
         assert_eq!(VramAddress(0b1111_1111_1110_0000).coarse_x(), 0);
         assert_eq!(VramAddress(0b0000_0000_0001_0000).coarse_x(), 16);
@@ -212,21 +161,21 @@ mod tests {
     }
 
     #[test]
-    fn test_name_table_h() {
-        assert_eq!(VramAddress(0b1111_1011_1111_1111).name_table_h(), 0);
-        assert_eq!(VramAddress(0b0000_0100_0000_0000).name_table_h(), 1);
+    fn test_nametable_h() {
+        assert_eq!(VramAddress(0b1111_1011_1111_1111).nametable_h(), 0);
+        assert_eq!(VramAddress(0b0000_0100_0000_0000).nametable_h(), 1);
     }
 
     #[test]
-    fn test_name_table_v() {
-        assert_eq!(VramAddress(0b1111_0111_1111_1111).name_table_v(), 0);
-        assert_eq!(VramAddress(0b0000_1000_0000_0000).name_table_v(), 1);
+    fn test_nametable_v() {
+        assert_eq!(VramAddress(0b1111_0111_1111_1111).nametable_v(), 0);
+        assert_eq!(VramAddress(0b0000_1000_0000_0000).nametable_v(), 1);
     }
 
     #[test]
-    fn test_name_table() {
-        assert_eq!(VramAddress(0b1111_0011_1111_1111).name_table(), 0);
-        assert_eq!(VramAddress(0b0000_1100_0000_0000).name_table(), 3);
+    fn test_nametable() {
+        assert_eq!(VramAddress(0b1111_0011_1111_1111).nametable(), 0);
+        assert_eq!(VramAddress(0b0000_1100_0000_0000).nametable(), 3);
     }
 
     #[test]
@@ -272,43 +221,43 @@ mod tests {
     }
 
     #[test]
-    fn test_set_name_table_h() {
+    fn test_set_nametable_h() {
         assert_change!(
             0b1111_1111_1111_1111,
-            set_name_table_h(0),
+            set_nametable_h(0),
             0b1111_1011_1111_1111
         );
         assert_change!(
             0b0000_0000_0000_0000,
-            set_name_table_h(1),
+            set_nametable_h(1),
             0b0000_0100_0000_0000
         );
     }
 
     #[test]
-    fn test_set_name_table_v() {
+    fn test_set_nametable_v() {
         assert_change!(
             0b1111_1111_1111_1111,
-            set_name_table_v(0),
+            set_nametable_v(0),
             0b1111_0111_1111_1111
         );
         assert_change!(
             0b0000_0000_0000_0000,
-            set_name_table_v(1),
+            set_nametable_v(1),
             0b0000_1000_0000_0000
         );
     }
 
     #[test]
-    fn test_set_name_table() {
+    fn test_set_nametable() {
         assert_change!(
             0b1111_1111_1111_1111,
-            set_name_table(0),
+            set_nametable(0),
             0b1111_0011_1111_1111
         );
         assert_change!(
             0b0000_0000_0000_0000,
-            set_name_table(3),
+            set_nametable(3),
             0b0000_1100_0000_0000
         );
     }

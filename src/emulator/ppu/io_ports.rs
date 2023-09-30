@@ -1,10 +1,10 @@
 use super::*;
 
-pub struct IO<'a>(&'a mut Ppu);
+pub struct IOPorts<'a, M: Memory>(&'a mut Ppu<M>);
 
-impl IO<'_> {
-    pub fn new(ppu: &mut Ppu) -> IO {
-        IO(ppu)
+impl<M: Memory> IOPorts<'_, M> {
+    pub fn new(ppu: &mut Ppu<M>) -> IOPorts<M> {
+        IOPorts(ppu)
     }
 
     pub fn read(&mut self, addr: u16) -> u8 {
@@ -44,10 +44,10 @@ impl IO<'_> {
 
     pub fn read_data(&mut self) -> u8 {
         let addr = self.0.regs.vram_addr.get();
-        let mut data = self.0.bus.read(addr);
+        let mut data = self.0.mem.read(addr);
 
         match addr {
-            0x3F00..=0x3FFF => self.0.regs.vram_data = self.0.bus.read(addr - 0x1000),
+            0x3F00..=0x3FFF => self.0.regs.vram_data = self.0.mem.read(addr - 0x1000),
             _ => std::mem::swap(&mut self.0.regs.vram_data, &mut data),
         }
 
@@ -60,11 +60,11 @@ impl IO<'_> {
     }
 
     pub fn write_ctrl(&mut self, val: u8) {
-        self.0.regs.name_table = match val & 0x03 {
-            0 => registers::NameTable::Zero,
-            1 => registers::NameTable::One,
-            2 => registers::NameTable::Two,
-            3 => registers::NameTable::Three,
+        self.0.regs.nametable = match val & 0x03 {
+            0 => registers::Nametable::Zero,
+            1 => registers::Nametable::One,
+            2 => registers::Nametable::Two,
+            3 => registers::Nametable::Three,
             _ => unreachable!(),
         };
 
@@ -121,7 +121,7 @@ impl IO<'_> {
     }
 
     pub fn write_data(&mut self, val: u8) {
-        self.0.bus.write(self.0.regs.vram_addr.get(), val);
+        self.0.mem.write(self.0.regs.vram_addr.get(), val);
         self.0.regs.increment_vram_address();
     }
 }

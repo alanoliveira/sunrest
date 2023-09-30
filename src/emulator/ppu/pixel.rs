@@ -27,12 +27,11 @@ impl Pixel {
         self.color != 0
     }
 
-    pub fn address(&self) -> u16 {
-        let palette_table = if self.kind == Kind::Background {
-            0x00
+    pub fn table(&self) -> u8 {
+        if self.kind == Kind::Background {
+            0
         } else {
-            0x10
-        };
-        (self.palette as u16) * 4 + (self.color as u16) + palette_table
+            1
+        }
     }
 }

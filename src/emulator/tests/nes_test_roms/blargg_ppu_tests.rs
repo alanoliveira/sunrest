@@ -4,7 +4,7 @@ use super::*;
 fn basics() {
     let mut console = build_emulator("blargg_ppu_tests_2005.09.15b/palette_ram.nes");
     clock_until(&mut console, |c| c.cpu.pc == 0xE412);
-    match console.cpu.io.read(0xF0) {
+    match console.cpu.mem.read(0xF0) {
         1 => {}
         2 => panic!("2) Palette read shouldn't be buffered like other VRAM"),
         3 => panic!("3) Palette write/read doesn't work"),
@@ -19,7 +19,7 @@ fn basics() {
 fn power_up_palette() {
     let mut console = build_emulator("blargg_ppu_tests_2005.09.15b/power_up_palette.nes");
     clock_until(&mut console, |c| c.cpu.pc == 0xE3AC);
-    match console.cpu.io.read(0xF0) {
+    match console.cpu.mem.read(0xF0) {
         1 => {}
         2 => panic!("2) Palette differs from table"),
         err => panic!("Unknown error {err:02X}"),
@@ -30,7 +30,7 @@ fn power_up_palette() {
 fn sprite_ram() {
     let mut console = build_emulator("blargg_ppu_tests_2005.09.15b/sprite_ram.nes");
     clock_until(&mut console, |c| c.cpu.pc == 0xE467);
-    match console.cpu.io.read(0xF0) {
+    match console.cpu.mem.read(0xF0) {
         1 => {}
         2 => panic!("2) Basic read/write doesn't work"),
         3 => panic!("3) Address should increment on $2004 write"),
@@ -47,7 +47,7 @@ fn sprite_ram() {
 fn vbl_clear_timing() {
     let mut console = build_emulator("blargg_ppu_tests_2005.09.15b/vbl_clear_time.nes");
     clock_until(&mut console, |c| c.cpu.pc == 0xE3B3);
-    match console.cpu.io.read(0xF0) {
+    match console.cpu.mem.read(0xF0) {
         1 => {}
         2 => panic!("2) VBL flag cleared too soon"),
         3 => panic!("3) VBL flag cleared too late"),
@@ -59,7 +59,7 @@ fn vbl_clear_timing() {
 fn vram_access() {
     let mut console = build_emulator("blargg_ppu_tests_2005.09.15b/vram_access.nes");
     clock_until(&mut console, |c| c.cpu.pc == 0xE48D);
-    match console.cpu.io.read(0xF0) {
+    match console.cpu.mem.read(0xF0) {
         1 => {}
         2 => panic!("2) VRAM reads should be delayed in a buffer"),
         3 => panic!("3) Basic Write/read doesn't work"),

@@ -77,7 +77,7 @@ impl Bus {
     }
 }
 
-impl cpu::IO for Bus {
+impl cpu::Memory for Bus {
     fn read(&self, addr: u16) -> u8 {
         self.read(addr)
     }

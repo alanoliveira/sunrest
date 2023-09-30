@@ -1,5 +1,5 @@
 mod address_increment;
-mod name_table;
+mod nametable;
 mod pattern_table;
 mod scroll;
 mod spr_height;
@@ -7,7 +7,7 @@ mod vblank;
 mod vram_address;
 
 pub use address_increment::AddressIncrement;
-pub use name_table::NameTable;
+pub use nametable::Nametable;
 pub use pattern_table::PatternTable;
 pub use scroll::Scroll;
 pub use spr_height::SprHeight;
@@ -25,7 +25,7 @@ pub struct Registers {
     pub spr_pattern_table: PatternTable,
     pub bg_pattern_table: PatternTable,
     pub spr_height: SprHeight,
-    pub name_table: NameTable,
+    pub nametable: Nametable,
     pub oam_addr: u8,
 
     pub clip_bg: bool,
@@ -63,18 +63,18 @@ impl Registers {
         self.scroll.x.set_coarse(self.vram_addr.coarse_x());
         self.scroll.y.set_coarse(self.vram_addr.coarse_y());
         self.scroll.y.set_fine(self.vram_addr.fine_y());
-        self.name_table = self.vram_addr.name_table().into();
+        self.nametable = self.vram_addr.nametable().into();
     }
 
     pub fn update_vram_address_x(&mut self) {
         self.vram_addr.set_coarse_x(self.scroll.x.coarse());
-        self.vram_addr.set_name_table_h(self.name_table.h());
+        self.vram_addr.set_nametable_h(self.nametable.h());
     }
 
     pub fn update_vram_address_y(&mut self) {
         self.vram_addr.set_coarse_y(self.scroll.y.coarse());
         self.vram_addr.set_fine_y(self.scroll.y.fine());
-        self.vram_addr.set_name_table_v(self.name_table.v());
+        self.vram_addr.set_nametable_v(self.nametable.v());
     }
 
     pub fn increment_vram_address(&mut self) {

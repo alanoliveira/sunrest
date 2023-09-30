@@ -9,7 +9,8 @@ const MAX_CYCLES: u64 = 100_000_000;
 
 fn build_emulator(rom_path: &str) -> Emulator {
     println!("Building console for {}", rom_path);
-    Emulator::new(&test_roms_path(rom_path))
+    let cartridge = cartridge::open_rom(&test_roms_path(rom_path));
+    Emulator::new(cartridge)
 }
 
 fn clock_until(emulator: &mut Emulator, f: fn(&Emulator) -> bool) {

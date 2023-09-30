@@ -1,5 +1,5 @@
 #[derive(Debug, Default, Clone, Copy)]
-pub enum NameTable {
+pub enum Nametable {
     #[default]
     Zero = 0,
     One = 1,
@@ -7,7 +7,7 @@ pub enum NameTable {
     Three = 3,
 }
 
-impl NameTable {
+impl Nametable {
     pub fn h(&self) -> u8 {
         match self {
             Self::Zero => 0,
@@ -27,7 +27,7 @@ impl NameTable {
     }
 }
 
-impl From<u8> for NameTable {
+impl From<u8> for Nametable {
     fn from(val: u8) -> Self {
         match val {
             0 => Self::Zero,

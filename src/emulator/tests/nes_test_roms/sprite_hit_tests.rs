@@ -4,7 +4,7 @@ use super::*;
 fn basics() {
     let mut emulator = build_emulator("sprite_hit_tests_2005.10.05/01.basics.nes");
     clock_until(&mut emulator, |c| c.cpu.pc == 0xE635);
-    match emulator.cpu.io.read(0xF8) {
+    match emulator.cpu.mem.read(0xF8) {
         1 => {}
         2 => panic!("2) Sprite hit isn't working at all"),
         3 => panic!("3) Should hit even when completely behind background"),
@@ -24,7 +24,7 @@ fn basics() {
 fn alignment() {
     let mut emulator = build_emulator("sprite_hit_tests_2005.10.05/02.alignment.nes");
     clock_until(&mut emulator, |c| c.cpu.pc == 0xE635);
-    match emulator.cpu.io.read(0xF8) {
+    match emulator.cpu.mem.read(0xF8) {
         1 => {}
         2 => panic!("2) Basic sprite-background alignment is way off"),
         3 => panic!("3) Sprite should miss left side of bg tile"),
@@ -43,7 +43,7 @@ fn alignment() {
 fn corners() {
     let mut emulator = build_emulator("sprite_hit_tests_2005.10.05/03.corners.nes");
     clock_until(&mut emulator, |c| c.cpu.pc == 0xE635);
-    match emulator.cpu.io.read(0xF8) {
+    match emulator.cpu.mem.read(0xF8) {
         1 => {}
         2 => panic!("2) Lower-right pixel should hit"),
         3 => panic!("3) Lower-left pixel should hit"),
@@ -57,7 +57,7 @@ fn corners() {
 fn flip() {
     let mut emulator = build_emulator("sprite_hit_tests_2005.10.05/04.flip.nes");
     clock_until(&mut emulator, |c| c.cpu.pc == 0xE5B6);
-    match emulator.cpu.io.read(0xF8) {
+    match emulator.cpu.mem.read(0xF8) {
         1 => {}
         2 => panic!("2) Horizontal flipping doesn't work"),
         3 => panic!("3) Vertical flipping doesn't work"),
@@ -70,7 +70,7 @@ fn flip() {
 fn left_clip() {
     let mut emulator = build_emulator("sprite_hit_tests_2005.10.05/05.left_clip.nes");
     clock_until(&mut emulator, |c| c.cpu.pc == 0xE635);
-    match emulator.cpu.io.read(0xF8) {
+    match emulator.cpu.mem.read(0xF8) {
         1 => {}
         2 => panic!("2) Should miss when entirely in left-edge clipping"),
         3 => panic!("3) Left-edge clipping occurs when $2001 is not $1e"),
@@ -87,7 +87,7 @@ fn left_clip() {
 fn right_edge() {
     let mut emulator = build_emulator("sprite_hit_tests_2005.10.05/06.right_edge.nes");
     clock_until(&mut emulator, |c| c.cpu.pc == 0xE635);
-    match emulator.cpu.io.read(0xF8) {
+    match emulator.cpu.mem.read(0xF8) {
         1 => {}
         2 => panic!("2) Should always miss when X = 255"),
         3 => panic!("3) Should hit; sprite has pixels < 255"),
@@ -102,7 +102,7 @@ fn right_edge() {
 fn screen_bottom() {
     let mut emulator = build_emulator("sprite_hit_tests_2005.10.05/07.screen_bottom.nes");
     clock_until(&mut emulator, |c| c.cpu.pc == 0xE635);
-    match emulator.cpu.io.read(0xF8) {
+    match emulator.cpu.mem.read(0xF8) {
         1 => {}
         2 => panic!("2) Should always miss when Y >= 239"),
         3 => panic!("3) Can hit when Y < 239"),
@@ -118,7 +118,7 @@ fn screen_bottom() {
 fn double_height() {
     let mut emulator = build_emulator("sprite_hit_tests_2005.10.05/08.double_height.nes");
     clock_until(&mut emulator, |c| c.cpu.pc == 0xE635);
-    match emulator.cpu.io.read(0xF8) {
+    match emulator.cpu.mem.read(0xF8) {
         1 => {}
         2 => panic!("2) Lower sprite tile should miss bottom of bg tile"),
         3 => panic!("3) Lower sprite tile should hit bottom of bg tile and miss top of bg tile"),
@@ -131,7 +131,7 @@ fn double_height() {
 fn timing_basics() {
     let mut emulator = build_emulator("sprite_hit_tests_2005.10.05/09.timing_basics.nes");
     clock_until(&mut emulator, |c| c.cpu.pc == 0xE64C);
-    match emulator.cpu.io.read(0xF8) {
+    match emulator.cpu.mem.read(0xF8) {
         1 => {}
         2 => panic!("2) Upper-left corner too soon"),
         3 => panic!("3) Upper-left corner too late"),
@@ -149,7 +149,7 @@ fn timing_basics() {
 fn timing_order() {
     let mut emulator = build_emulator("sprite_hit_tests_2005.10.05/10.timing_order.nes");
     clock_until(&mut emulator, |c| c.cpu.pc == 0xE635);
-    match emulator.cpu.io.read(0xF8) {
+    match emulator.cpu.mem.read(0xF8) {
         1 => {}
         2 => panic!("2) Upper-left corner too soon"),
         3 => panic!("3) Upper-left corner too late"),
@@ -167,7 +167,7 @@ fn timing_order() {
 fn edge_timing() {
     let mut emulator = build_emulator("sprite_hit_tests_2005.10.05/11.edge_timing.nes");
     clock_until(&mut emulator, |c| c.cpu.pc == 0xE635);
-    match emulator.cpu.io.read(0xF8) {
+    match emulator.cpu.mem.read(0xF8) {
         1 => {}
         2 => panic!("2) Hit time shouldn't be based on pixels under left clip"),
         3 => panic!("3) Hit time shouldn't be based on pixels at X=255"),

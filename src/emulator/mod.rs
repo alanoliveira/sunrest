@@ -2,12 +2,12 @@
 mod tests;
 
 mod bus;
-mod cartridge;
 mod cpu;
 mod oam_dma;
 mod ppu;
 mod video;
 
+pub mod cartridge;
 pub mod input_devices;
 
 pub use video::{Color, Signal as VideoSignal};
@@ -16,8 +16,11 @@ use input_devices::InputDevice;
 
 use std::{cell::RefCell, rc::Rc};
 
+type Cpu = cpu::Cpu<bus::Bus>;
+type Ppu = ppu::Ppu<ppu::bus::Bus>;
+
 pub struct Emulator {
-    cpu: cpu::Cpu<bus::Bus>,
+    cpu: Cpu,
     ppu: PpuWrapper,
     oam_dma: oam_dma::OamDma,
 
@@ -26,11 +29,8 @@ pub struct Emulator {
 }
 
 impl Emulator {
-    pub fn new<P>(rom_path: P) -> Self
-    where
-        P: AsRef<std::path::Path>,
-    {
-        let cartridge = Rc::new(RefCell::new(cartridge::open_rom(rom_path.as_ref())));
+    pub fn new(cartridge: cartridge::Cartridge) -> Self {
+        let cartridge = Rc::new(RefCell::new(cartridge));
 
         let ppu_cartridge = PpuCartridge(cartridge.clone());
         let ppu_bus = ppu::bus::Bus::new(Box::new(ppu_cartridge));
@@ -63,17 +63,17 @@ impl Emulator {
     }
 
     pub fn clock_input_devices(&mut self, dev1: &mut dyn InputDevice, dev2: &mut dyn InputDevice) {
-        if let Some(input_ctrl) = self.cpu.io.input_ctrl_write.take() {
+        if let Some(input_ctrl) = self.cpu.mem.input_ctrl_write.take() {
             dev1.write(input_ctrl);
-            self.cpu.io.device1_state.replace(None);
+            self.cpu.mem.device1_state.replace(None);
             dev2.write(input_ctrl);
-            self.cpu.io.device2_state.replace(None);
+            self.cpu.mem.device2_state.replace(None);
         } else {
-            if self.cpu.io.device1_state.get().is_none() {
-                self.cpu.io.device1_state.replace(Some(dev1.read()));
+            if self.cpu.mem.device1_state.get().is_none() {
+                self.cpu.mem.device1_state.replace(Some(dev1.read()));
             }
-            if self.cpu.io.device2_state.get().is_none() {
-                self.cpu.io.device2_state.replace(Some(dev2.read()));
+            if self.cpu.mem.device2_state.get().is_none() {
+                self.cpu.mem.device2_state.replace(Some(dev2.read()));
             }
         }
     }
@@ -102,40 +102,40 @@ impl Emulator {
 
     fn clock_cpu(&mut self) {
         self.cpu.clock();
-        if let Some(page) = self.cpu.io.take_oam_dma_page() {
+        if let Some(page) = self.cpu.mem.take_oam_dma_page() {
             self.oam_dma.prepare(page);
         }
     }
 
     fn clock_oam_dma(&mut self) {
         if (self.cycle / 12) % 2 == 1 {
-            self.oam_dma.write(&mut self.cpu.io);
+            self.oam_dma.write(&mut self.cpu.mem);
         } else {
-            self.oam_dma.read(&self.cpu.io);
+            self.oam_dma.read(&self.cpu.mem);
         }
     }
 }
 
-struct PpuWrapper(Rc<RefCell<ppu::Ppu>>);
+struct PpuWrapper(Rc<RefCell<Ppu>>);
 
 impl PpuWrapper {
-    fn as_mut(&mut self) -> std::cell::RefMut<ppu::Ppu> {
+    fn as_mut(&mut self) -> std::cell::RefMut<Ppu> {
         self.0.borrow_mut()
     }
 
-    fn as_ref(&self) -> std::cell::Ref<ppu::Ppu> {
+    fn as_ref(&self) -> std::cell::Ref<Ppu> {
         self.0.borrow()
     }
 }
 
-struct PpuRegs(Rc<RefCell<ppu::Ppu>>);
+struct PpuRegs(Rc<RefCell<Ppu>>);
 impl bus::PpuRegsIO for PpuRegs {
     fn read(&self, addr: u16) -> u8 {
-        self.0.borrow_mut().io().read(addr)
+        self.0.borrow_mut().io_ports().read(addr)
     }
 
     fn write(&mut self, addr: u16, val: u8) {
-        self.0.borrow_mut().io().write(addr, val);
+        self.0.borrow_mut().io_ports().write(addr, val);
     }
 }
 

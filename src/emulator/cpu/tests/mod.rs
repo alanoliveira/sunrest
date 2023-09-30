@@ -62,7 +62,7 @@ use super::{AddressingMode as AM, Instruction as IN, Status as S, *};
 #[derive(Clone)]
 struct TestIO(Vec<u8>);
 
-impl IO for TestIO {
+impl Memory for TestIO {
     fn read(&self, addr: u16) -> u8 {
         self.0[addr as usize]
     }

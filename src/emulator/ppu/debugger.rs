@@ -1,14 +1,13 @@
 use super::*;
 
-pub struct Debugger<'a>(pub &'a Ppu);
+pub struct Debugger<'a, M: Memory>(pub &'a Ppu<M>);
 
-impl Debugger<'_> {
-    pub fn print_name_table(&self, table_num: usize) {
+impl<M: Memory> Debugger<'_, M> {
+    pub fn print_nametable(&self, table_num: u8) {
         println!("Name table {}:", table_num);
-        let table = self.0.bus.vram.name_table(table_num);
         for row in 0..30 {
             for col in 0..32 {
-                let tile = table[row * 32 + col];
+                let tile = self.0.mem.read_nametable(table_num, col, row);
                 print!("{:02X} ", tile);
             }
             println!();
@@ -16,13 +15,12 @@ impl Debugger<'_> {
         println!();
     }
 
-    pub fn print_attribute_table(&self, table_num: usize) {
+    pub fn print_attribute_table(&self, table_num: u8) {
         println!("Attribute table {}:", table_num);
-        let table = self.0.bus.vram.name_table(table_num);
         for row in 0..8 {
             for col in 0..8 {
-                let tile = table[row * 32 + col];
-                print!("{:02X} ", tile);
+                let attr = self.0.mem.read_attribute(table_num, col, row);
+                print!("{:02X} ", attr);
             }
             println!();
         }
@@ -33,7 +31,7 @@ impl Debugger<'_> {
         println!("Palette table:");
         for row in 0..2 {
             for col in 0..16 {
-                let color = self.0.bus.read(0x3F00 + row * 16 + col);
+                let color = self.0.mem.read(0x3F00 + row * 16 + col);
                 print!("{:02X} ", color);
                 if col % 4 == 3 {
                     print!("  ");
@@ -58,8 +56,8 @@ impl Debugger<'_> {
 
     pub fn print_pattern_row_by_tile_addr(&self, tile_addr: u16, row: usize) {
         let row = row as u16;
-        let mut pattern_hi = self.0.bus.read(tile_addr + row);
-        let mut pattern_lo = self.0.bus.read(tile_addr + row + 8);
+        let mut pattern_hi = self.0.mem.read(tile_addr + row);
+        let mut pattern_lo = self.0.mem.read(tile_addr + row + 8);
 
         print!("|");
         for _ in 0..8 {

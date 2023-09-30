@@ -16,7 +16,7 @@ impl Vram {
         self.0[self.resolve_address(addr) as usize]
     }
 
-    pub fn name_table(&self, idx: usize) -> &[u8] {
+    pub fn nametable(&self, idx: usize) -> &[u8] {
         assert!(idx < 4);
         let start = idx * 0x0400;
         &self.0[start..start + 0x0400]

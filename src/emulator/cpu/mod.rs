@@ -16,10 +16,11 @@ const NMI_VECTOR: u16 = 0xFFFA;
 const RESET_VECTOR: u16 = 0xFFFC;
 const BREAK_VECTOR: u16 = 0xFFFE;
 
-pub trait IO {
+pub trait Memory {
     fn read(&self, addr: u16) -> u8;
     fn write(&mut self, addr: u16, val: u8);
 }
+
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum Signal {
     Irq,
@@ -27,8 +28,8 @@ pub enum Signal {
     Rst,
 }
 
-pub struct Cpu<I: IO> {
-    pub io: I,
+pub struct Cpu<M: Memory> {
+    pub mem: M,
 
     pub a: u8,
     pub x: u8,
@@ -42,7 +43,7 @@ pub struct Cpu<I: IO> {
     pub busy_cycles: usize,
 }
 
-impl<I: IO> std::fmt::Debug for Cpu<I> {
+impl<M: Memory> std::fmt::Debug for Cpu<M> {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         f.debug_struct("Cpu")
             .field("A", &format_args!("{:02X}", self.a))
@@ -57,10 +58,10 @@ impl<I: IO> std::fmt::Debug for Cpu<I> {
     }
 }
 
-impl<I: IO> Cpu<I> {
-    pub fn new(io: I) -> Self {
+impl<M: Memory> Cpu<M> {
+    pub fn new(mem: M) -> Self {
         Self {
-            io,
+            mem,
 
             a: 0,
             x: 0,
@@ -83,8 +84,8 @@ impl<I: IO> Cpu<I> {
 
     pub fn detour(&mut self, vector: u16) {
         self.push_pc();
-        let lo = self.io.read(vector);
-        let hi = self.io.read(vector.wrapping_add(1));
+        let lo = self.mem.read(vector);
+        let hi = self.mem.read(vector.wrapping_add(1));
         self.pc = u16::from_le_bytes([lo, hi]);
     }
 
@@ -193,18 +194,18 @@ impl<I: IO> Cpu<I> {
                         Instruction::Lsr => self.lsr_mem(addr),
                         Instruction::Rol => self.rol_mem(addr),
                         Instruction::Ror => self.ror_mem(addr),
-                        Instruction::Adc => self.adc(self.io.read(addr)),
-                        Instruction::And => self.and(self.io.read(addr)),
-                        Instruction::Bit => self.bit(self.io.read(addr)),
-                        Instruction::Cmp => self.cmp(self.io.read(addr)),
-                        Instruction::Cpx => self.cpx(self.io.read(addr)),
-                        Instruction::Cpy => self.cpy(self.io.read(addr)),
-                        Instruction::Eor => self.eor(self.io.read(addr)),
-                        Instruction::Lda => self.lda(self.io.read(addr)),
-                        Instruction::Ldx => self.ldx(self.io.read(addr)),
-                        Instruction::Ldy => self.ldy(self.io.read(addr)),
-                        Instruction::Ora => self.ora(self.io.read(addr)),
-                        Instruction::Sbc => self.sbc(self.io.read(addr)),
+                        Instruction::Adc => self.adc(self.mem.read(addr)),
+                        Instruction::And => self.and(self.mem.read(addr)),
+                        Instruction::Bit => self.bit(self.mem.read(addr)),
+                        Instruction::Cmp => self.cmp(self.mem.read(addr)),
+                        Instruction::Cpx => self.cpx(self.mem.read(addr)),
+                        Instruction::Cpy => self.cpy(self.mem.read(addr)),
+                        Instruction::Eor => self.eor(self.mem.read(addr)),
+                        Instruction::Lda => self.lda(self.mem.read(addr)),
+                        Instruction::Ldx => self.ldx(self.mem.read(addr)),
+                        Instruction::Ldy => self.ldy(self.mem.read(addr)),
+                        Instruction::Ora => self.ora(self.mem.read(addr)),
+                        Instruction::Sbc => self.sbc(self.mem.read(addr)),
                         Instruction::Dec => self.dec(addr),
                         Instruction::Inc => self.inc(addr),
                         Instruction::Sta => self.sta(addr),
@@ -220,14 +221,14 @@ impl<I: IO> Cpu<I> {
                         Instruction::Lsr => self.lsr_mem(addr),
                         Instruction::Rol => self.rol_mem(addr),
                         Instruction::Ror => self.ror_mem(addr),
-                        Instruction::Adc => self.adc(self.io.read(addr)),
-                        Instruction::Sbc => self.sbc(self.io.read(addr)),
-                        Instruction::And => self.and(self.io.read(addr)),
-                        Instruction::Eor => self.eor(self.io.read(addr)),
-                        Instruction::Ora => self.ora(self.io.read(addr)),
-                        Instruction::Cmp => self.cmp(self.io.read(addr)),
-                        Instruction::Lda => self.lda(self.io.read(addr)),
-                        Instruction::Ldy => self.ldy(self.io.read(addr)),
+                        Instruction::Adc => self.adc(self.mem.read(addr)),
+                        Instruction::Sbc => self.sbc(self.mem.read(addr)),
+                        Instruction::And => self.and(self.mem.read(addr)),
+                        Instruction::Eor => self.eor(self.mem.read(addr)),
+                        Instruction::Ora => self.ora(self.mem.read(addr)),
+                        Instruction::Cmp => self.cmp(self.mem.read(addr)),
+                        Instruction::Lda => self.lda(self.mem.read(addr)),
+                        Instruction::Ldy => self.ldy(self.mem.read(addr)),
                         Instruction::Sty => self.sty(addr),
                         Instruction::Dec => self.dec(addr),
                         Instruction::Inc => self.inc(addr),
@@ -238,7 +239,7 @@ impl<I: IO> Cpu<I> {
                 AddressingMode::Zpy => {
                     let addr = self.zpy();
                     match instruction {
-                        Instruction::Ldx => self.ldx(self.io.read(addr)),
+                        Instruction::Ldx => self.ldx(self.mem.read(addr)),
                         Instruction::Stx => self.stx(addr),
                         _ => panic!("Invalid instruction {:?} for ZPY", instruction),
                     }
@@ -250,18 +251,18 @@ impl<I: IO> Cpu<I> {
                         Instruction::Lsr => self.lsr_mem(addr),
                         Instruction::Rol => self.rol_mem(addr),
                         Instruction::Ror => self.ror_mem(addr),
-                        Instruction::Adc => self.adc(self.io.read(addr)),
-                        Instruction::And => self.and(self.io.read(addr)),
-                        Instruction::Bit => self.bit(self.io.read(addr)),
-                        Instruction::Cmp => self.cmp(self.io.read(addr)),
-                        Instruction::Cpx => self.cpx(self.io.read(addr)),
-                        Instruction::Cpy => self.cpy(self.io.read(addr)),
-                        Instruction::Eor => self.eor(self.io.read(addr)),
-                        Instruction::Lda => self.lda(self.io.read(addr)),
-                        Instruction::Ldx => self.ldx(self.io.read(addr)),
-                        Instruction::Ldy => self.ldy(self.io.read(addr)),
-                        Instruction::Ora => self.ora(self.io.read(addr)),
-                        Instruction::Sbc => self.sbc(self.io.read(addr)),
+                        Instruction::Adc => self.adc(self.mem.read(addr)),
+                        Instruction::And => self.and(self.mem.read(addr)),
+                        Instruction::Bit => self.bit(self.mem.read(addr)),
+                        Instruction::Cmp => self.cmp(self.mem.read(addr)),
+                        Instruction::Cpx => self.cpx(self.mem.read(addr)),
+                        Instruction::Cpy => self.cpy(self.mem.read(addr)),
+                        Instruction::Eor => self.eor(self.mem.read(addr)),
+                        Instruction::Lda => self.lda(self.mem.read(addr)),
+                        Instruction::Ldx => self.ldx(self.mem.read(addr)),
+                        Instruction::Ldy => self.ldy(self.mem.read(addr)),
+                        Instruction::Ora => self.ora(self.mem.read(addr)),
+                        Instruction::Sbc => self.sbc(self.mem.read(addr)),
                         Instruction::Jmp => self.jmp(addr),
                         Instruction::Jsr => self.jsr(addr),
                         Instruction::Dec => self.dec(addr),
@@ -285,14 +286,14 @@ impl<I: IO> Cpu<I> {
                         _ => {
                             self.busy_cycles += crossed as usize;
                             match instruction {
-                                Instruction::Adc => self.adc(self.io.read(addr)),
-                                Instruction::Sbc => self.sbc(self.io.read(addr)),
-                                Instruction::Lda => self.lda(self.io.read(addr)),
-                                Instruction::Ldy => self.ldy(self.io.read(addr)),
-                                Instruction::And => self.and(self.io.read(addr)),
-                                Instruction::Cmp => self.cmp(self.io.read(addr)),
-                                Instruction::Eor => self.eor(self.io.read(addr)),
-                                Instruction::Ora => self.ora(self.io.read(addr)),
+                                Instruction::Adc => self.adc(self.mem.read(addr)),
+                                Instruction::Sbc => self.sbc(self.mem.read(addr)),
+                                Instruction::Lda => self.lda(self.mem.read(addr)),
+                                Instruction::Ldy => self.ldy(self.mem.read(addr)),
+                                Instruction::And => self.and(self.mem.read(addr)),
+                                Instruction::Cmp => self.cmp(self.mem.read(addr)),
+                                Instruction::Eor => self.eor(self.mem.read(addr)),
+                                Instruction::Ora => self.ora(self.mem.read(addr)),
                                 _ => panic!("Invalid instruction {:?} for ABX", instruction),
                             }
                         }
@@ -305,14 +306,14 @@ impl<I: IO> Cpu<I> {
                         _ => {
                             self.busy_cycles += crossed as usize;
                             match instruction {
-                                Instruction::Adc => self.adc(self.io.read(addr)),
-                                Instruction::Sbc => self.sbc(self.io.read(addr)),
-                                Instruction::And => self.and(self.io.read(addr)),
-                                Instruction::Eor => self.eor(self.io.read(addr)),
-                                Instruction::Ora => self.ora(self.io.read(addr)),
-                                Instruction::Cmp => self.cmp(self.io.read(addr)),
-                                Instruction::Lda => self.lda(self.io.read(addr)),
-                                Instruction::Ldx => self.ldx(self.io.read(addr)),
+                                Instruction::Adc => self.adc(self.mem.read(addr)),
+                                Instruction::Sbc => self.sbc(self.mem.read(addr)),
+                                Instruction::And => self.and(self.mem.read(addr)),
+                                Instruction::Eor => self.eor(self.mem.read(addr)),
+                                Instruction::Ora => self.ora(self.mem.read(addr)),
+                                Instruction::Cmp => self.cmp(self.mem.read(addr)),
+                                Instruction::Lda => self.lda(self.mem.read(addr)),
+                                Instruction::Ldx => self.ldx(self.mem.read(addr)),
                                 _ => panic!("Invalid instruction {:?} for ABY", instruction),
                             }
                         }
@@ -328,13 +329,13 @@ impl<I: IO> Cpu<I> {
                 AddressingMode::Izx => {
                     let addr = self.izx();
                     match instruction {
-                        Instruction::Adc => self.adc(self.io.read(addr)),
-                        Instruction::And => self.and(self.io.read(addr)),
-                        Instruction::Cmp => self.cmp(self.io.read(addr)),
-                        Instruction::Eor => self.eor(self.io.read(addr)),
-                        Instruction::Lda => self.lda(self.io.read(addr)),
-                        Instruction::Ora => self.ora(self.io.read(addr)),
-                        Instruction::Sbc => self.sbc(self.io.read(addr)),
+                        Instruction::Adc => self.adc(self.mem.read(addr)),
+                        Instruction::And => self.and(self.mem.read(addr)),
+                        Instruction::Cmp => self.cmp(self.mem.read(addr)),
+                        Instruction::Eor => self.eor(self.mem.read(addr)),
+                        Instruction::Lda => self.lda(self.mem.read(addr)),
+                        Instruction::Ora => self.ora(self.mem.read(addr)),
+                        Instruction::Sbc => self.sbc(self.mem.read(addr)),
                         Instruction::Sta => self.sta(addr),
                         _ => panic!("Invalid instruction {:?} for IZX", instruction),
                     }
@@ -346,13 +347,13 @@ impl<I: IO> Cpu<I> {
                         _ => {
                             self.busy_cycles += crossed as usize;
                             match instruction {
-                                Instruction::Adc => self.adc(self.io.read(addr)),
-                                Instruction::Sbc => self.sbc(self.io.read(addr)),
-                                Instruction::And => self.and(self.io.read(addr)),
-                                Instruction::Eor => self.eor(self.io.read(addr)),
-                                Instruction::Ora => self.ora(self.io.read(addr)),
-                                Instruction::Cmp => self.cmp(self.io.read(addr)),
-                                Instruction::Lda => self.lda(self.io.read(addr)),
+                                Instruction::Adc => self.adc(self.mem.read(addr)),
+                                Instruction::Sbc => self.sbc(self.mem.read(addr)),
+                                Instruction::And => self.and(self.mem.read(addr)),
+                                Instruction::Eor => self.eor(self.mem.read(addr)),
+                                Instruction::Ora => self.ora(self.mem.read(addr)),
+                                Instruction::Cmp => self.cmp(self.mem.read(addr)),
+                                Instruction::Lda => self.lda(self.mem.read(addr)),
                                 _ => panic!("Invalid instruction {:?} for IZY", instruction),
                             }
                         }
@@ -424,27 +425,27 @@ impl<I: IO> Cpu<I> {
         let base_address = u16::from_le_bytes([lo, hi]);
         if base_address & 0xFF == 0xFF {
             // emulate 6502 page boundary hardware bug
-            let lo = self.io.read(base_address);
-            let hi = self.io.read(base_address & 0xFF00);
+            let lo = self.mem.read(base_address);
+            let hi = self.mem.read(base_address & 0xFF00);
             u16::from_le_bytes([lo, hi])
         } else {
-            let lo = self.io.read(base_address);
-            let hi = self.io.read(base_address.wrapping_add(1));
+            let lo = self.mem.read(base_address);
+            let hi = self.mem.read(base_address.wrapping_add(1));
             u16::from_le_bytes([lo, hi])
         }
     }
 
     fn izx(&mut self) -> u16 {
         let ind_address = self.read_pc().wrapping_add(self.x);
-        let lo = self.io.read(ind_address as u16);
-        let hi = self.io.read(ind_address.wrapping_add(1) as u16);
+        let lo = self.mem.read(ind_address as u16);
+        let hi = self.mem.read(ind_address.wrapping_add(1) as u16);
         u16::from_le_bytes([lo, hi])
     }
 
     fn izy(&mut self) -> (u16, bool) {
         let ind_address = self.read_pc();
-        let lo = self.io.read(ind_address as u16);
-        let hi = self.io.read(ind_address.wrapping_add(1) as u16);
+        let lo = self.mem.read(ind_address as u16);
+        let hi = self.mem.read(ind_address.wrapping_add(1) as u16);
         let base_address = u16::from_le_bytes([lo, hi]);
         let addr = base_address.wrapping_add(self.y as u16);
         let crossed = page_crossed(base_address, addr);
@@ -459,7 +460,7 @@ impl<I: IO> Cpu<I> {
     }
 
     fn read_pc(&mut self) -> u8 {
-        let data = self.io.read(self.pc);
+        let data = self.mem.read(self.pc);
         self.pc = self.pc.wrapping_add(1);
         data
     }
@@ -469,13 +470,13 @@ impl<I: IO> Cpu<I> {
     }
 
     fn push(&mut self, val: u8) {
-        self.io.write(self.stack_addr(), val);
+        self.mem.write(self.stack_addr(), val);
         self.sp = self.sp.wrapping_sub(1);
     }
 
     fn pop(&mut self) -> u8 {
         self.sp = self.sp.wrapping_add(1);
-        self.io.read(self.stack_addr())
+        self.mem.read(self.stack_addr())
     }
 
     fn push_pc(&mut self) {
@@ -512,17 +513,17 @@ impl<I: IO> Cpu<I> {
 
     /// store accumulator
     fn sta(&mut self, addr: u16) {
-        self.io.write(addr, self.a);
+        self.mem.write(addr, self.a);
     }
 
     /// store X
     fn stx(&mut self, addr: u16) {
-        self.io.write(addr, self.x);
+        self.mem.write(addr, self.x);
     }
 
     /// store Y
     fn sty(&mut self, addr: u16) {
-        self.io.write(addr, self.y);
+        self.mem.write(addr, self.y);
     }
 
     /// transfer accumulator to X
@@ -591,8 +592,8 @@ impl<I: IO> Cpu<I> {
 
     /// decrement (memory)
     fn dec(&mut self, addr: u16) {
-        let val = self.io.read(addr).wrapping_sub(1);
-        self.io.write(addr, val);
+        let val = self.mem.read(addr).wrapping_sub(1);
+        self.mem.write(addr, val);
         self.p.set_zn(val);
     }
 
@@ -612,8 +613,8 @@ impl<I: IO> Cpu<I> {
 
     /// increment (memory)
     fn inc(&mut self, addr: u16) {
-        let val = self.io.read(addr).wrapping_add(1);
-        self.io.write(addr, val);
+        let val = self.mem.read(addr).wrapping_add(1);
+        self.mem.write(addr, val);
         self.p.set_zn(val);
     }
 
@@ -690,8 +691,8 @@ impl<I: IO> Cpu<I> {
     }
 
     fn asl_mem(&mut self, addr: u16) {
-        let res = self.asl(self.io.read(addr));
-        self.io.write(addr, res);
+        let res = self.asl(self.mem.read(addr));
+        self.mem.write(addr, res);
     }
 
     fn asl(&mut self, val: u8) -> u8 {
@@ -707,8 +708,8 @@ impl<I: IO> Cpu<I> {
     }
 
     fn lsr_mem(&mut self, addr: u16) {
-        let res = self.lsr(self.io.read(addr));
-        self.io.write(addr, res);
+        let res = self.lsr(self.mem.read(addr));
+        self.mem.write(addr, res);
     }
 
     fn lsr(&mut self, val: u8) -> u8 {
@@ -724,8 +725,8 @@ impl<I: IO> Cpu<I> {
     }
 
     fn rol_mem(&mut self, addr: u16) {
-        let res = self.rol(self.io.read(addr));
-        self.io.write(addr, res);
+        let res = self.rol(self.mem.read(addr));
+        self.mem.write(addr, res);
     }
 
     fn rol(&mut self, val: u8) -> u8 {
@@ -742,8 +743,8 @@ impl<I: IO> Cpu<I> {
     }
 
     fn ror_mem(&mut self, addr: u16) {
-        let res = self.ror(self.io.read(addr));
-        self.io.write(addr, res);
+        let res = self.ror(self.mem.read(addr));
+        self.mem.write(addr, res);
     }
 
     fn ror(&mut self, val: u8) -> u8 {

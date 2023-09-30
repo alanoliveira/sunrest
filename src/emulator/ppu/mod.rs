@@ -1,7 +1,8 @@
 mod background;
 mod debugger;
 mod foreground;
-mod io;
+mod io_ports;
+mod memory;
 mod oam;
 mod pixel;
 mod registers;
@@ -9,6 +10,7 @@ mod sprite;
 
 pub mod bus;
 
+pub use memory::*;
 use pixel::{Kind as PixelKind, Pixel};
 use sprite::RawSprite;
 
@@ -17,8 +19,8 @@ const LINES_PER_FRAME: usize = 262;
 const OAM_SIZE: usize = 0x100;
 const MAX_VISIBLE_SPRITES: usize = 8;
 
-pub struct Ppu {
-    pub bus: bus::Bus,
+pub struct Ppu<M: Memory> {
+    pub mem: M,
     oam: oam::Oam,
     sprites: Vec<RawSprite>,
     regs: registers::Registers,
@@ -32,7 +34,7 @@ pub struct Ppu {
     pub cycle: usize,
 }
 
-impl std::fmt::Debug for Ppu {
+impl<M: Memory> std::fmt::Debug for Ppu<M> {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         write!(
             f,
@@ -42,10 +44,10 @@ impl std::fmt::Debug for Ppu {
     }
 }
 
-impl Ppu {
-    pub fn new(bus: bus::Bus) -> Self {
+impl<M: Memory> Ppu<M> {
+    pub fn new(mem: M) -> Self {
         Self {
-            bus,
+            mem,
             oam: oam::Oam::new(),
             sprites: Vec::with_capacity(MAX_VISIBLE_SPRITES),
             regs: registers::Registers::default(),
@@ -60,7 +62,7 @@ impl Ppu {
         }
     }
 
-    pub fn debugger(&self) -> debugger::Debugger {
+    pub fn debugger(&self) -> debugger::Debugger<M> {
         debugger::Debugger(self)
     }
 
@@ -68,8 +70,8 @@ impl Ppu {
         self.regs.nmi.take().is_some()
     }
 
-    pub fn io(&mut self) -> io::IO {
-        io::IO::new(self)
+    pub fn io_ports(&mut self) -> io_ports::IOPorts<M> {
+        io_ports::IOPorts::new(self)
     }
 
     pub fn clock(&mut self) {
@@ -141,14 +143,14 @@ impl Ppu {
         let bg_visible = show_bg && bg_pixel.is_visible();
         let spr_visible = show_spr && spr_pixel.is_visible();
 
-        let pixel = if spr_visible && !(bg_visible && spr_pixel.behind) {
+        let pix = if spr_visible && !(bg_visible && spr_pixel.behind) {
             spr_pixel
         } else if bg_visible {
             bg_pixel
         } else {
             Pixel::default()
         };
-        self.color_idx = self.bus.read_palette(pixel.address()) as usize;
+        self.color_idx = self.mem.read_palette(pix.table(), pix.palette, pix.color) as usize;
 
         if !self.regs.spr0_hit
             && self.regs.spr0_found
@@ -173,13 +175,18 @@ impl Ppu {
                     self.regs.vram_addr.increment_x();
                 }
                 1 => {
-                    let tile_addr = self.regs.vram_addr.tile();
-                    self.background.tmp_tile_idx = self.bus.read_nametable(tile_addr)
+                    self.background.tmp_tile_idx = self.mem.read_nametable(
+                        self.regs.vram_addr.nametable(),
+                        self.regs.vram_addr.coarse_y(),
+                        self.regs.vram_addr.coarse_x(),
+                    );
                 }
                 3 => {
-                    let attribute = self.bus.read_attribute(self.regs.vram_addr.attribute());
-                    let palette_shift = self.regs.vram_addr.palette_shift();
-                    self.background.tmp_palette = (attribute >> palette_shift) & 0x03;
+                    self.background.tmp_palette = self.mem.read_attribute_palette(
+                        self.regs.vram_addr.nametable(),
+                        self.regs.vram_addr.coarse_y(),
+                        self.regs.vram_addr.coarse_x(),
+                    );
                 }
                 num @ (5 | 7) => {
                     let addr = (self.regs.bg_pattern_table as u16) << 12
@@ -187,9 +194,9 @@ impl Ppu {
                         | (self.regs.vram_addr.fine_y() as u16);
                     if num == 5 {
                         // the byte containing the lo bits is stored first
-                        self.background.tmp_pattern_lo = self.bus.read(addr);
+                        self.background.tmp_pattern_lo = self.mem.read(addr);
                     } else {
-                        self.background.tmp_pattern_hi = self.bus.read(addr + 8);
+                        self.background.tmp_pattern_hi = self.mem.read(addr + 8);
                     }
                 }
                 _ => {}
@@ -227,8 +234,8 @@ impl Ppu {
                 let index = (self.dot - 257) / 8;
                 if let Some(spr) = self.sprites.get(index).copied() {
                     let pattern_addr = self.spr_pattern_addr(spr);
-                    let hi = self.bus.read(pattern_addr + 8);
-                    let lo = self.bus.read(pattern_addr);
+                    let hi = self.mem.read(pattern_addr + 8);
+                    let lo = self.mem.read(pattern_addr);
                     self.foreground.load(spr, hi, lo);
                 }
             }

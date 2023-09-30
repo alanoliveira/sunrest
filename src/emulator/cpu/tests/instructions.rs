@@ -5,7 +5,7 @@ macro_rules! test_instruction {
         let mut cpu = $cpu;
         let prg = &[util::opcode_lookup($ins, $mode), $($args,)*];
         prg.iter().enumerate().for_each(|(idx, val)| {
-            cpu.io.write(cpu.pc + idx as u16, *val);
+            cpu.mem.write(cpu.pc + idx as u16, *val);
         });
         assert_cpu!(cpu, {$($want_reg: $want_val),*});
     }};
