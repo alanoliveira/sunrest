@@ -27,6 +27,7 @@ pub struct Ppu<M: Memory> {
     background: background::Background,
     foreground: foreground::Foreground,
 
+    odd_frame: bool,
     pub color_idx: usize,
     pub dot: usize,
     pub scanline: usize,
@@ -54,6 +55,7 @@ impl<M: Memory> Ppu<M> {
             background: background::Background::new(),
             foreground: foreground::Foreground::new(),
 
+            odd_frame: false,
             color_idx: 0,
             dot: 0,
             scanline: 0,
@@ -82,6 +84,7 @@ impl<M: Memory> Ppu<M> {
             if self.scanline == LINES_PER_FRAME {
                 self.scanline = 0;
                 self.frame += 1;
+                self.odd_frame = !self.odd_frame;
             }
         }
 
@@ -124,6 +127,7 @@ impl<M: Memory> Ppu<M> {
                 self.regs.spr_overflow = false;
             }
             66 => self.regs.spr0_found = false,
+            339 if self.regs.render_enabled() && self.odd_frame => self.dot += 1,
             _ => (),
         }
 
