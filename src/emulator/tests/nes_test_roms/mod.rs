@@ -1,4 +1,5 @@
 mod blargg_ppu_tests;
+mod ppu_vbl_nmi;
 mod sprite_hit_tests;
 
 use super::*;

@@ -37,7 +37,15 @@ impl<M: Memory> IOPorts<'_, M> {
     }
 
     pub fn read_status(&mut self) -> u8 {
-        (self.0.regs.vblank.get() as u8) << 7
+        if self.0.scanline == 241 {
+            match self.0.dot {
+                0 => self.0.regs.nmi_suppressed = true,
+                1 | 2 => self.0.nmi.abort(),
+                _ => (),
+            }
+        }
+
+        (self.0.regs.vblank_occurred.take().is_some() as u8) << 7
             | (self.0.regs.spr0_hit as u8) << 6
             | (self.0.regs.spr_overflow as u8) << 5
     }
@@ -84,7 +92,26 @@ impl<M: Memory> IOPorts<'_, M> {
             false => registers::SprHeight::Eight,
             true => registers::SprHeight::Sixteen,
         };
-        self.0.regs.nmi_enabled = val & 0x80 != 0;
+
+        let nmi_enabled = val & 0x80 != 0;
+        if nmi_enabled
+            && !self.0.regs.nmi_enabled
+            && self.0.regs.vblank_occurred.is_some()
+            && self.0.dot != 0
+        {
+            self.0.nmi.schedule();
+        }
+
+        if !nmi_enabled
+            && self.0.regs.nmi_enabled
+            && self.0.regs.vblank_occurred.is_some()
+            && self.0.scanline == 241
+            && self.0.dot < 3
+        {
+            self.0.nmi.abort();
+        }
+
+        self.0.regs.nmi_enabled = nmi_enabled;
     }
 
     pub fn write_mask(&mut self, val: u8) {

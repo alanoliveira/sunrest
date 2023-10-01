@@ -3,7 +3,6 @@ mod nametable;
 mod pattern_table;
 mod scroll;
 mod spr_height;
-mod vblank;
 mod vram_address;
 
 pub use address_increment::AddressIncrement;
@@ -11,7 +10,6 @@ pub use nametable::Nametable;
 pub use pattern_table::PatternTable;
 pub use scroll::Scroll;
 pub use spr_height::SprHeight;
-pub use vblank::Vblank;
 pub use vram_address::VramAddress;
 
 #[derive(Debug, Default)]
@@ -36,23 +34,12 @@ pub struct Registers {
     pub spr0_hit: bool,
     pub spr0_found: bool,
     pub spr_overflow: bool,
-    pub vblank: Vblank,
+    pub vblank_occurred: Option<()>,
     pub nmi_enabled: bool,
-    pub nmi: Option<()>,
+    pub nmi_suppressed: bool,
 }
 
 impl Registers {
-    pub fn start_vblank(&mut self) {
-        self.vblank.set(true);
-        if self.nmi_enabled {
-            self.nmi = Some(());
-        }
-    }
-
-    pub fn stop_vblank(&mut self) {
-        self.vblank.set(false);
-    }
-
     pub fn set_scroll(&mut self, x: u8, y: u8) {
         self.scroll.set_x(x);
         self.scroll.set_y(y);

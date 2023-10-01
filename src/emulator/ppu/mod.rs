@@ -3,6 +3,7 @@ mod debugger;
 mod foreground;
 mod io_ports;
 mod memory;
+mod nmi;
 mod oam;
 mod pixel;
 mod registers;
@@ -21,6 +22,7 @@ const MAX_VISIBLE_SPRITES: usize = 8;
 
 pub struct Ppu<M: Memory> {
     pub mem: M,
+    nmi: nmi::Nmi,
     oam: oam::Oam,
     sprites: Vec<RawSprite>,
     regs: registers::Registers,
@@ -49,6 +51,7 @@ impl<M: Memory> Ppu<M> {
     pub fn new(mem: M) -> Self {
         Self {
             mem,
+            nmi: nmi::Nmi::new(),
             oam: oam::Oam::new(),
             sprites: Vec::with_capacity(MAX_VISIBLE_SPRITES),
             regs: registers::Registers::default(),
@@ -69,7 +72,7 @@ impl<M: Memory> Ppu<M> {
     }
 
     pub fn take_nmi(&mut self) -> bool {
-        self.regs.nmi.take().is_some()
+        self.nmi.take()
     }
 
     pub fn io_ports(&mut self) -> io_ports::IOPorts<M> {
@@ -87,6 +90,7 @@ impl<M: Memory> Ppu<M> {
                 self.odd_frame = !self.odd_frame;
             }
         }
+        self.nmi.clock();
 
         match self.scanline {
             0..=239 => self.visible_line(),
@@ -111,7 +115,14 @@ impl<M: Memory> Ppu<M> {
 
     fn vblank_start_line(&mut self) {
         if self.dot == 1 {
-            self.regs.start_vblank();
+            if self.regs.nmi_suppressed {
+                self.regs.nmi_suppressed = false;
+            } else {
+                self.regs.vblank_occurred = Some(());
+                if self.regs.nmi_enabled {
+                    self.nmi.schedule();
+                }
+            }
         }
     }
 
@@ -122,7 +133,7 @@ impl<M: Memory> Ppu<M> {
 
         match self.dot {
             1 => {
-                self.regs.stop_vblank();
+                self.regs.vblank_occurred = None;
                 self.regs.spr0_hit = false;
                 self.regs.spr_overflow = false;
             }
