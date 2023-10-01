@@ -25,18 +25,11 @@ fn nestest_test() {
     cpu.p = (S::U | S::I).into();
     cpu.cycle = 7;
 
-    loop {
+    for _ in 0..=14571 {
         cpu.clock();
-
-        // after this address it will start to test unofficial opcodes
-        if cpu.pc == 0xC6BD {
-            break;
-        }
-
-        if cpu.cycle > 20000 {
-            panic!("Nestest is taking too much cycles");
-        }
     }
+
+    assert_eq!(cpu.pc, 0xC6BD, "CPU instruction timing is off");
 
     let ret1 = cpu.mem.read(0x00);
     let ret2 = cpu.mem.read(0x02);

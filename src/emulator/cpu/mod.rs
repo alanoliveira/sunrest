@@ -376,7 +376,7 @@ impl<M: Memory> Cpu<M> {
 
                     if cond {
                         self.pc = address;
-                        self.busy_cycles += crossed as usize;
+                        self.busy_cycles += 1 + crossed as usize;
                     }
                 }
             },

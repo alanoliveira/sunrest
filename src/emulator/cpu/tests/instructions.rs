@@ -189,25 +189,25 @@ fn test_aby_instructions_with_page_cross() {
 
 #[test]
 fn test_rel_instructions() {
-    test_instruction!(IN::Bcc, AM::Rel, [0x05], mk_cpu!(mk_io!(), pc: 0x8000, p: 0x00), {pc: 0x8007, cycle: 2});
+    test_instruction!(IN::Bcc, AM::Rel, [0x05], mk_cpu!(mk_io!(), pc: 0x8000, p: 0x00), {pc: 0x8007, cycle: 3});
     test_instruction!(IN::Bcc, AM::Rel, [0x05], mk_cpu!(mk_io!(), pc: 0x8000, p: 0x01), {pc: 0x8002, cycle: 2});
     test_instruction!(IN::Bcs, AM::Rel, [0x05], mk_cpu!(mk_io!(), pc: 0x8000, p: 0x00), {pc: 0x8002, cycle: 2});
-    test_instruction!(IN::Bcs, AM::Rel, [0x05], mk_cpu!(mk_io!(), pc: 0x8000, p: 0x01), {pc: 0x8007, cycle: 2});
+    test_instruction!(IN::Bcs, AM::Rel, [0x05], mk_cpu!(mk_io!(), pc: 0x8000, p: 0x01), {pc: 0x8007, cycle: 3});
     test_instruction!(IN::Beq, AM::Rel, [0x05], mk_cpu!(mk_io!(), pc: 0x8000, p: 0x00), {pc: 0x8002, cycle: 2});
-    test_instruction!(IN::Beq, AM::Rel, [0x05], mk_cpu!(mk_io!(), pc: 0x8000, p: 0x02), {pc: 0x8007, cycle: 2});
+    test_instruction!(IN::Beq, AM::Rel, [0x05], mk_cpu!(mk_io!(), pc: 0x8000, p: 0x02), {pc: 0x8007, cycle: 3});
     test_instruction!(IN::Bmi, AM::Rel, [0x05], mk_cpu!(mk_io!(), pc: 0x8000, p: 0x00), {pc: 0x8002, cycle: 2});
-    test_instruction!(IN::Bmi, AM::Rel, [0x05], mk_cpu!(mk_io!(), pc: 0x8000, p: 0x80), {pc: 0x8007, cycle: 2});
-    test_instruction!(IN::Bne, AM::Rel, [0x05], mk_cpu!(mk_io!(), pc: 0x8000, p: 0x00), {pc: 0x8007, cycle: 2});
+    test_instruction!(IN::Bmi, AM::Rel, [0x05], mk_cpu!(mk_io!(), pc: 0x8000, p: 0x80), {pc: 0x8007, cycle: 3});
+    test_instruction!(IN::Bne, AM::Rel, [0x05], mk_cpu!(mk_io!(), pc: 0x8000, p: 0x00), {pc: 0x8007, cycle: 3});
     test_instruction!(IN::Bne, AM::Rel, [0x05], mk_cpu!(mk_io!(), pc: 0x8000, p: 0x02), {pc: 0x8002, cycle: 2});
-    test_instruction!(IN::Bpl, AM::Rel, [0x05], mk_cpu!(mk_io!(), pc: 0x8000, p: 0x00), {pc: 0x8007, cycle: 2});
+    test_instruction!(IN::Bpl, AM::Rel, [0x05], mk_cpu!(mk_io!(), pc: 0x8000, p: 0x00), {pc: 0x8007, cycle: 3});
     test_instruction!(IN::Bpl, AM::Rel, [0x05], mk_cpu!(mk_io!(), pc: 0x8000, p: 0x80), {pc: 0x8002, cycle: 2});
-    test_instruction!(IN::Bvc, AM::Rel, [0x05], mk_cpu!(mk_io!(), pc: 0x8000, p: 0x00), {pc: 0x8007, cycle: 2});
+    test_instruction!(IN::Bvc, AM::Rel, [0x05], mk_cpu!(mk_io!(), pc: 0x8000, p: 0x00), {pc: 0x8007, cycle: 3});
     test_instruction!(IN::Bvc, AM::Rel, [0x05], mk_cpu!(mk_io!(), pc: 0x8000, p: 0x40), {pc: 0x8002, cycle: 2});
     test_instruction!(IN::Bvs, AM::Rel, [0x05], mk_cpu!(mk_io!(), pc: 0x8000, p: 0x00), {pc: 0x8002, cycle: 2});
-    test_instruction!(IN::Bvs, AM::Rel, [0x05], mk_cpu!(mk_io!(), pc: 0x8000, p: 0x40), {pc: 0x8007, cycle: 2});
+    test_instruction!(IN::Bvs, AM::Rel, [0x05], mk_cpu!(mk_io!(), pc: 0x8000, p: 0x40), {pc: 0x8007, cycle: 3});
 
     // branch instructions take 1 additional cycle when branching to a new page (only on success)
-    test_instruction!(IN::Bcc, AM::Rel, [-0x05i8 as u8], mk_cpu!(mk_io!(), pc: 0x8000, p: 0x00), {pc: 0x7FFD, cycle: 3});
+    test_instruction!(IN::Bcc, AM::Rel, [-0x05i8 as u8], mk_cpu!(mk_io!(), pc: 0x8000, p: 0x00), {pc: 0x7FFD, cycle: 4});
     test_instruction!(IN::Bcc, AM::Rel, [-0x05i8 as u8], mk_cpu!(mk_io!(), pc: 0x8000, p: 0x01), {pc: 0x8002, cycle: 2});
 }
 
