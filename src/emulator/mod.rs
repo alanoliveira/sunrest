@@ -1,6 +1,8 @@
 #[cfg(test)]
 mod tests;
 
+mod apu;
+mod audio;
 mod bus;
 mod cpu;
 mod oam_dma;
@@ -22,6 +24,7 @@ type Ppu = ppu::Ppu<ppu::bus::Bus>;
 pub struct Emulator {
     cpu: Cpu,
     ppu: PpuWrapper,
+    apu: ApuWrapper,
     oam_dma: oam_dma::OamDma,
 
     color_palette: [video::Color; 64],
@@ -36,9 +39,16 @@ impl Emulator {
         let ppu_bus = ppu::bus::Bus::new(Box::new(ppu_cartridge));
         let ppu = Rc::new(RefCell::new(ppu::Ppu::new(ppu_bus)));
 
+        let apu = Rc::new(RefCell::new(apu::Apu::new()));
+
         let cpu_cartridge = CpuCartridge(cartridge.clone());
-        let ppu_regs = PpuRegs(ppu.clone());
-        let bus = bus::Bus::new(Box::new(cpu_cartridge), Box::new(ppu_regs));
+        let ppu_regs = PpuWrapper(ppu.clone());
+        let apu_regs = ApuWrapper(apu.clone());
+        let bus = bus::Bus::new(
+            Box::new(cpu_cartridge),
+            Box::new(ppu_regs),
+            Box::new(apu_regs),
+        );
         let mut cpu = cpu::Cpu::new(bus);
 
         cpu.reset();
@@ -46,6 +56,7 @@ impl Emulator {
         Self {
             cpu,
             ppu: PpuWrapper(ppu),
+            apu: ApuWrapper(apu),
             oam_dma: oam_dma::OamDma::new(),
 
             color_palette: video::DEFAULT_PALETTE.clone(),
@@ -59,6 +70,17 @@ impl Emulator {
             x: ppu.dot.wrapping_sub(1),
             y: ppu.scanline,
             color: self.color_palette[ppu.color_idx],
+        }
+    }
+
+    pub fn audio_signal(&self) -> audio::Signal {
+        let apu = self.apu.as_ref();
+        audio::Signal {
+            pulse1: 0,
+            pulse2: 0,
+            triangle: 0,
+            noise: 0,
+            dmc: 0,
         }
     }
 
@@ -86,6 +108,8 @@ impl Emulator {
             } else {
                 self.clock_cpu();
             }
+
+            self.apu.as_mut().clock_timer();
         }
 
         // ~53.69mhz
@@ -95,6 +119,11 @@ impl Emulator {
             if ppu.take_nmi() {
                 self.cpu.set_signal(cpu::Signal::Nmi);
             }
+        }
+
+        // ~240hz
+        if self.cycle % 89490 == 0 {
+            self.apu.as_mut().clock_sequencer();
         }
 
         self.cycle += 1;
@@ -116,6 +145,28 @@ impl Emulator {
     }
 }
 
+struct ApuWrapper(Rc<RefCell<apu::Apu>>);
+
+impl ApuWrapper {
+    fn as_mut(&mut self) -> std::cell::RefMut<apu::Apu> {
+        self.0.borrow_mut()
+    }
+
+    fn as_ref(&self) -> std::cell::Ref<apu::Apu> {
+        self.0.borrow()
+    }
+}
+
+impl bus::Addressable for ApuWrapper {
+    fn read(&self, addr: u16) -> u8 {
+        self.0.borrow_mut().read(addr)
+    }
+
+    fn write(&mut self, addr: u16, val: u8) {
+        self.0.borrow_mut().write(addr, val);
+    }
+}
+
 struct PpuWrapper(Rc<RefCell<Ppu>>);
 
 impl PpuWrapper {
@@ -128,8 +179,7 @@ impl PpuWrapper {
     }
 }
 
-struct PpuRegs(Rc<RefCell<Ppu>>);
-impl bus::PpuRegsIO for PpuRegs {
+impl bus::Addressable for PpuWrapper {
     fn read(&self, addr: u16) -> u8 {
         self.0.borrow_mut().io_ports().read(addr)
     }
@@ -151,8 +201,12 @@ impl ppu::bus::CartridgeIO for PpuCartridge {
 }
 
 struct CpuCartridge(Rc<RefCell<cartridge::Cartridge>>);
-impl bus::CartridgeIO for CpuCartridge {
+impl bus::Addressable for CpuCartridge {
     fn read(&self, addr: u16) -> u8 {
         self.0.borrow().read_prg(addr)
+    }
+
+    fn write(&mut self, _: u16, _: u8) {
+        log!("Attempted to write to cartridge: {addr:04X} = {val:02X}");
     }
 }

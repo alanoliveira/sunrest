@@ -1,11 +1,8 @@
+use super::*;
+
 const PPU_REGS_BIT_MASK: u16 = 0x07;
 
-pub trait PpuRegsIO {
-    fn read(&self, addr: u16) -> u8;
-    fn write(&mut self, addr: u16, val: u8);
-}
-
-pub struct PpuRegs(pub Box<dyn PpuRegsIO>);
+pub struct PpuRegs(pub Box<dyn Addressable>);
 
 impl PpuRegs {
     pub fn read(&self, addr: u16) -> u8 {
