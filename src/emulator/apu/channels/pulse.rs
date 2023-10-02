@@ -8,7 +8,8 @@ pub enum Kind {
 pub struct Pulse {
     enabled: bool,
     timer: Timer,
-    sequencer: Sequencer,
+    duty_cycle: PulseDutyCycle,
+    sequencer: Sequencer<8>,
     length: Length,
     envelope: Envelope,
     sweep: Sweep,
@@ -20,6 +21,7 @@ impl Pulse {
         Self {
             enabled: false,
             timer: Timer::new(0),
+            duty_cycle: PulseDutyCycle::Duty12_5,
             sequencer: Sequencer::default(),
             length: Length::default(),
             envelope: Envelope::default(),
@@ -42,7 +44,7 @@ impl Pulse {
     pub fn write(&mut self, addr: u16, val: u8) {
         match addr {
             0x00 => {
-                self.sequencer.set(val >> 6);
+                self.duty_cycle = (val >> 6).into();
                 self.envelope.timer.set_period((val & 0x0F) as u16);
                 self.envelope.repeat = val & 0x20 != 0;
                 self.envelope.fade = val & 0x10 == 0;
@@ -69,7 +71,7 @@ impl Pulse {
 
     pub fn output(&self) -> u8 {
         let active = self.enabled
-            && self.sequencer.output()
+            && self.duty_cycle.output(self.sequencer.get())
             && self.length.output()
             && self.timer.period() >= 8
             && self.timer.period() <= 0x7FF;

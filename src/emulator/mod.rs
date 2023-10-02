@@ -78,7 +78,7 @@ impl Emulator {
         audio::Signal {
             pulse1: apu.pulse1.output(),
             pulse2: apu.pulse2.output(),
-            triangle: 0,
+            triangle: apu.triangle.output(),
             noise: 0,
             dmc: 0,
         }
