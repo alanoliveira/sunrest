@@ -1,3 +1,4 @@
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub struct Signal {
     pub x: usize,
     pub y: usize,

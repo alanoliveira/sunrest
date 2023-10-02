@@ -1,9 +1,10 @@
+use sdl2::audio::{AudioQueue, AudioSpecDesired};
 use sdl2::event::Event;
 use sdl2::keyboard::Keycode;
 use sdl2::pixels::PixelFormatEnum;
 use sdl2::render::{Canvas, Texture};
 use sdl2::video::Window;
-use sdl2::EventPump;
+use sdl2::{AudioSubsystem, EventPump};
 
 use crate::ui::*;
 
@@ -15,6 +16,7 @@ struct SdlContext {
     event_pump: EventPump,
     canvas: Canvas<Window>,
     texture_creator: TextureCreator,
+    audio_subsystem: AudioSubsystem,
 }
 
 impl SdlContext {
@@ -37,6 +39,7 @@ impl SdlContext {
         let mut canvas = window
             .into_canvas()
             .accelerated()
+            .present_vsync()
             .build()
             .map_err(|e| e.to_string())
             .expect("Failed to create canvas");
@@ -48,10 +51,13 @@ impl SdlContext {
 
         let texture_creator = canvas.texture_creator();
 
+        let audio_subsystem = sdl_context.audio().expect("Failed to initialize SDL audio");
+
         Self {
             event_pump,
             canvas,
             texture_creator,
+            audio_subsystem,
         }
     }
 }
@@ -61,6 +67,7 @@ pub struct SdlEngine {
     game_screen_texture: Texture<'static>,
     canvas: &'static mut Canvas<Window>,
     event_pump: &'static mut EventPump,
+    audio_device: AudioQueue<f32>,
 }
 
 impl UiEngine for SdlEngine {
@@ -76,11 +83,24 @@ impl UiEngine for SdlEngine {
             )
             .expect("Failed to create texture");
 
+        let desired_spec = AudioSpecDesired {
+            freq: Some(SAMPLE_RATE as i32),
+            channels: Some(1), // mono
+            samples: Some(SAMPLE_BUFFER_SIZE as u16),
+        };
+
+        let audio_device = sdl_context
+            .audio_subsystem
+            .open_queue(None, &desired_spec)
+            .expect("Failed to open audio playback");
+        audio_device.resume();
+
         Self {
             game_screen_buffer: [0; SCREEN_WIDTH * SCREEN_HEIGHT * 3],
             game_screen_texture,
             canvas: &mut sdl_context.canvas,
             event_pump: &mut sdl_context.event_pump,
+            audio_device,
         }
     }
 
@@ -163,5 +183,17 @@ impl UiEngine for SdlEngine {
                 _ => {}
             }
         }
+    }
+
+    fn feed_samples(&mut self, samples: &[f32]) -> bool {
+        let buf_size = self.audio_device.spec().samples as u32;
+        if self.audio_device.size() < (buf_size / 2) {
+            self.audio_device
+                .queue_audio(samples)
+                .expect("Failed to queue audio");
+            return true;
+        }
+
+        false
     }
 }
