@@ -64,6 +64,10 @@ impl Cartridge {
     pub fn mirror_mode(&self) -> MirrorMode {
         self.mapper.mirror_mode()
     }
+
+    pub fn take_irq(&mut self) -> bool {
+        self.mapper.take_irq()
+    }
 }
 
 pub fn open_rom(path: &std::path::Path) -> Cartridge {

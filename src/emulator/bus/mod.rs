@@ -1,5 +1,6 @@
 mod apu_regs;
 mod ppu_regs;
+mod sram;
 mod wram;
 
 pub use apu_regs::*;
@@ -12,6 +13,9 @@ const WRAM_END: u16 = 0x1FFF;
 
 const PRG_START: u16 = 0x8000;
 const PRG_END: u16 = 0xFFFF;
+
+const SRAM_START: u16 = 0x6000;
+const SRAM_END: u16 = 0x7FFF;
 
 const OAM_DMA_ADDR: u16 = 0x4014;
 
@@ -38,6 +42,7 @@ pub struct Bus {
     ppu_regs: ppu_regs::PpuRegs,
     apu_regs: apu_regs::ApuRegs,
     wram: wram::Wram,
+    sram: sram::Sram, // in reality this is on the cartridge
     oam_dma_page: Option<u8>,
 
     pub input_ctrl_write: Option<u8>,
@@ -56,6 +61,7 @@ impl Bus {
             ppu_regs: ppu_regs::PpuRegs(ppu_regs_io),
             apu_regs: apu_regs::ApuRegs(apu_regs_io),
             wram: wram::Wram::new(),
+            sram: sram::Sram::new(),
             oam_dma_page: None,
 
             input_ctrl_write: None,
@@ -72,6 +78,7 @@ impl Bus {
         match addr {
             WRAM_START..=WRAM_END => self.wram.write(addr - WRAM_START, val),
             PPU_REGS_START..=PPU_REGS_END => self.ppu_regs.write(addr - PPU_REGS_START, val),
+            SRAM_START..=SRAM_END => self.sram.write(addr - SRAM_START, val),
             PRG_START..=PRG_END => self.cartridge_io.write(addr - PRG_START, val),
             OAM_DMA_ADDR => self.oam_dma_page = Some(val),
             INPUT_PORT_CTRL_ADDR => self.input_ctrl_write = Some(val),
@@ -86,6 +93,7 @@ impl Bus {
         match addr {
             WRAM_START..=WRAM_END => self.wram.read(addr - WRAM_START),
             PPU_REGS_START..=PPU_REGS_END => self.ppu_regs.read(addr - PPU_REGS_START),
+            SRAM_START..=SRAM_END => self.sram.read(addr - SRAM_START),
             PRG_START..=PRG_END => self.cartridge_io.read(addr - PRG_START),
             INPUT_PORT_1_ADDR => self.device1_state.take().unwrap_or(0),
             INPUT_PORT_2_ADDR => self.device2_state.take().unwrap_or(0),

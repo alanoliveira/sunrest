@@ -244,6 +244,9 @@ impl<M: Memory> Ppu<M> {
                     self.regs.spr0_found |= i == 0;
                 }
             }
+            260 => {
+                self.mem.read(0x1000); // force fetch to update MMC3 IRQ counter
+            }
             263 => self.foreground.clear(),
             264..=320 if self.dot % 8 == 0 => {
                 let index = (self.dot - 257) / 8;

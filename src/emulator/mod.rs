@@ -26,6 +26,7 @@ pub struct Emulator {
     ppu: PpuWrapper,
     apu: ApuWrapper,
     oam_dma: oam_dma::OamDma,
+    cartridge: Rc<RefCell<cartridge::Cartridge>>,
 
     color_palette: [video::Color; 64],
     pub cycle: usize,
@@ -58,6 +59,7 @@ impl Emulator {
             ppu: PpuWrapper(ppu),
             apu: ApuWrapper(apu),
             oam_dma: oam_dma::OamDma::new(),
+            cartridge,
 
             color_palette: video::DEFAULT_PALETTE.clone(),
             cycle: 0,
@@ -114,10 +116,15 @@ impl Emulator {
 
         // ~53.69mhz
         if self.cycle % 4 == 0 {
-            let mut ppu = self.ppu.as_mut();
-            ppu.clock();
-            if ppu.take_nmi() {
-                self.cpu.set_signal(cpu::Signal::Nmi);
+            {
+                let mut ppu = self.ppu.as_mut();
+                ppu.clock();
+                if ppu.take_nmi() {
+                    self.cpu.set_signal(cpu::Signal::Nmi);
+                }
+            }
+            if self.cartridge.borrow_mut().take_irq() {
+                self.cpu.set_signal(cpu::Signal::Irq);
             }
         }
 
