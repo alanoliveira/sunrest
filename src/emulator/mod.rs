@@ -79,7 +79,7 @@ impl Emulator {
             pulse1: apu.pulse1.output(),
             pulse2: apu.pulse2.output(),
             triangle: apu.triangle.output(),
-            noise: 0,
+            noise: apu.noise.output(),
             dmc: 0,
         }
     }
