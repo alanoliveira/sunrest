@@ -6,7 +6,7 @@ const TRAINER_SIZE: usize = 0x200;
 const HEADER_SIZE: usize = 16;
 
 struct Flags6 {
-    mirroring: Mirroring,
+    mirroring: MirrorMode,
     has_persistent_memory: bool,
     has_trainer: bool,
     ignore_mirroring: bool,
@@ -17,9 +17,9 @@ impl From<u8> for Flags6 {
     fn from(value: u8) -> Self {
         Self {
             mirroring: if value & 0b0000_0001 != 0 {
-                Mirroring::Vertical
+                MirrorMode::Vertical
             } else {
-                Mirroring::Horizontal
+                MirrorMode::Horizontal
             },
             has_persistent_memory: value & 0b0000_0010 != 0,
             has_trainer: value & 0b0000_0100 != 0,
@@ -76,7 +76,12 @@ impl INesRomBuilder {
         let chr_size = chr_banks * CHR_ROM_PAGE_SIZE;
         let chr_data = &data[(prg_start + prg_size)..(prg_start + prg_size + chr_size)];
 
-        Cartridge::new(&prg_data, &chr_data)
+        let mapper: Box<dyn mappers::Mapper> = match mapper_code {
+            0 => Box::new(mappers::Mapper000::new(prg_banks, flags6.mirroring)),
+            _ => panic!("Mapper {} not supported", mapper_code),
+        };
+
+        Cartridge::new(mapper, &prg_data, &chr_data)
     }
 }
 

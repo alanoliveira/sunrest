@@ -28,7 +28,7 @@ pub struct Emulator {
     oam_dma: oam_dma::OamDma,
 
     color_palette: [video::Color; 64],
-   pub cycle: usize,
+    pub cycle: usize,
 }
 
 impl Emulator {
@@ -197,6 +197,10 @@ impl ppu::bus::CartridgeIO for PpuCartridge {
 
     fn write(&self, addr: u16, val: u8) {
         self.0.borrow_mut().write_chr(addr, val)
+    }
+
+    fn mirror_mode(&self) -> cartridge::MirrorMode {
+        self.0.borrow().mirror_mode()
     }
 }
 

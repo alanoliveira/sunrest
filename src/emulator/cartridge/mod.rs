@@ -1,22 +1,28 @@
 mod i_nes;
 
+pub mod mappers;
+
 const CHR_RAM_SIZE: usize = 0x2000;
 
-#[derive(Debug, Clone, Copy)]
-pub enum Mirroring {
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum MirrorMode {
     Horizontal,
     Vertical,
+    SingleScreen0,
+    SingleScreen1,
 }
 
 pub struct Cartridge {
+    mapper: Box<dyn mappers::Mapper>,
     prg_data: Vec<u8>,
     chr_data: Vec<u8>,
     chr_ram: Box<[u8; CHR_RAM_SIZE]>,
 }
 
 impl Cartridge {
-    pub fn new(prg_data: &[u8], chr_data: &[u8]) -> Self {
+    pub fn new(mapper: Box<dyn mappers::Mapper>, prg_data: &[u8], chr_data: &[u8]) -> Self {
         Self {
+            mapper,
             prg_data: prg_data.to_vec(),
             chr_data: chr_data.to_vec(),
             chr_ram: Box::new([0; CHR_RAM_SIZE]),
@@ -24,21 +30,24 @@ impl Cartridge {
     }
 
     pub fn read_prg(&self, addr: u16) -> u8 {
-        let len = self.prg_data.len();
-        self.prg_data[(addr as usize) % len]
+        self.prg_data[self.mapper.prg_addr(addr)]
     }
 
     pub fn read_chr(&self, addr: u16) -> u8 {
-        let len = self.chr_data.len();
-        if len == 0 {
-            self.chr_ram[addr as usize]
+        let addr = self.mapper.chr_addr(addr);
+        if self.chr_data.len() == 0 {
+            self.chr_ram[addr]
         } else {
-            self.chr_data[(addr as usize) % len]
+            self.chr_data[addr]
         }
     }
 
     pub fn write_chr(&mut self, addr: u16, value: u8) {
         self.chr_ram[addr as usize] = value;
+    }
+
+    pub fn mirror_mode(&self) -> MirrorMode {
+        self.mapper.mirror_mode()
     }
 }
 

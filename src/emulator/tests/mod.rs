@@ -52,7 +52,14 @@ impl Emulator {
 
 #[test]
 fn test_frame_timing() {
-    let cartridge = cartridge::Cartridge::new(&vec![0xEA; 0x8000], &vec![]);
+    let cartridge = cartridge::Cartridge::new(
+        Box::new(cartridge::mappers::Mapper000::new(
+            2,
+            cartridge::MirrorMode::Horizontal,
+        )),
+        &vec![0xEA; 0x8000],
+        &vec![],
+    );
     let mut emulator = Emulator::new(cartridge);
 
     for _ in 0..5 {
