@@ -28,7 +28,7 @@ pub struct Emulator {
     oam_dma: oam_dma::OamDma,
 
     color_palette: [video::Color; 64],
-    cycle: usize,
+   pub cycle: usize,
 }
 
 impl Emulator {
@@ -76,8 +76,8 @@ impl Emulator {
     pub fn audio_signal(&self) -> audio::Signal {
         let apu = self.apu.as_ref();
         audio::Signal {
-            pulse1: 0,
-            pulse2: 0,
+            pulse1: apu.pulse1.output(),
+            pulse2: apu.pulse2.output(),
             triangle: 0,
             noise: 0,
             dmc: 0,
