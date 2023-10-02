@@ -210,7 +210,7 @@ impl bus::Addressable for CpuCartridge {
         self.0.borrow().read_prg(addr)
     }
 
-    fn write(&mut self, _: u16, _: u8) {
-        log!("Attempted to write to cartridge: {addr:04X} = {val:02X}");
+    fn write(&mut self, addr: u16, val: u8) {
+        self.0.borrow_mut().write_prg(addr, val);
     }
 }

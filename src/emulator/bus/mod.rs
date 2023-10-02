@@ -72,6 +72,7 @@ impl Bus {
         match addr {
             WRAM_START..=WRAM_END => self.wram.write(addr - WRAM_START, val),
             PPU_REGS_START..=PPU_REGS_END => self.ppu_regs.write(addr - PPU_REGS_START, val),
+            PRG_START..=PRG_END => self.cartridge_io.write(addr - PRG_START, val),
             OAM_DMA_ADDR => self.oam_dma_page = Some(val),
             INPUT_PORT_CTRL_ADDR => self.input_ctrl_write = Some(val),
             (APU_REGS_START..=APU_REGS_END) | APU_STATUS_ADDR | APU_FRAME_COUNTER_ADDR => {

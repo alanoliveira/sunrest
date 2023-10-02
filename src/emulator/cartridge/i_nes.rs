@@ -53,16 +53,15 @@ impl INesRomBuilder {
         let chr_banks = data[5] as usize;
         let flags6 = Flags6::from(data[6]);
         let flags7 = Flags7::from(data[7]);
-        let mapper_code = (flags7.mapper_hi << 4) | flags6.mapper_lo;
 
-        log!("PRG ROM banks: {}", prg_banks);
-        log!("CHR ROM banks: {}", chr_banks);
-        log!("Hardware Mirroring: {:?}", flags6.mirroring);
-        log!("Persistent memory: {}", flags6.has_persistent_memory);
-        log!("Mapper: {}", mapper_code);
-        if mapper_code != 0 {
-            panic!("Mapper {} not supported", mapper_code)
-        }
+        let cartridge_info = CartridgeInfo {
+            mapper_code: (flags7.mapper_hi << 4) | flags6.mapper_lo,
+            prg_banks,
+            chr_banks,
+            mirror_mode: flags6.mirroring,
+            has_persistent_memory: flags6.has_persistent_memory,
+            has_trainer: flags6.has_trainer,
+        };
 
         let prg_start = if flags6.has_trainer {
             TRAINER_SIZE
@@ -76,12 +75,7 @@ impl INesRomBuilder {
         let chr_size = chr_banks * CHR_ROM_PAGE_SIZE;
         let chr_data = &data[(prg_start + prg_size)..(prg_start + prg_size + chr_size)];
 
-        let mapper: Box<dyn mappers::Mapper> = match mapper_code {
-            0 => Box::new(mappers::Mapper000::new(prg_banks, flags6.mirroring)),
-            _ => panic!("Mapper {} not supported", mapper_code),
-        };
-
-        Cartridge::new(mapper, &prg_data, &chr_data)
+        Cartridge::new(cartridge_info, &prg_data, &chr_data)
     }
 }
 

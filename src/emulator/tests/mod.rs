@@ -53,10 +53,11 @@ impl Emulator {
 #[test]
 fn test_frame_timing() {
     let cartridge = cartridge::Cartridge::new(
-        Box::new(cartridge::mappers::Mapper000::new(
-            2,
-            cartridge::MirrorMode::Horizontal,
-        )),
+        cartridge::CartridgeInfo {
+            prg_banks: 1,
+            chr_banks: 1,
+            ..Default::default()
+        },
         &vec![0xEA; 0x8000],
         &vec![],
     );
