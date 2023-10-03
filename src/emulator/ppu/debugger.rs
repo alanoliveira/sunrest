@@ -2,6 +2,7 @@ use super::*;
 
 pub struct Debugger<'a, M: Memory>(pub &'a Ppu<M>);
 
+#[allow(dead_code)]
 impl<M: Memory> Debugger<'_, M> {
     pub fn print_nametable(&self, table_num: u8) {
         println!("Name table {}:", table_num);

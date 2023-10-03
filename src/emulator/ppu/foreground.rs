@@ -72,17 +72,6 @@ impl Foreground {
     }
 }
 
-fn generate_pixels(mut hi: u8, mut lo: u8, spr: RawSprite) -> [Pixel; 8] {
-    let mut pixels = [Pixel::default(); 8];
-    for i in 0..8 {
-        let color = ((hi & 0x80) >> 6) | ((lo & 0x80) >> 7);
-        hi <<= 1;
-        lo <<= 1;
-        pixels[i] = Pixel::new(PixelKind::Sprite, spr.attr.palette, color, spr.attr.behind);
-    }
-    pixels
-}
-
 #[cfg(test)]
 mod tests {
     use super::*;

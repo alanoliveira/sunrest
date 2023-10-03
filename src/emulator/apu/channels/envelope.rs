@@ -12,16 +12,6 @@ pub struct Envelope {
 }
 
 impl Envelope {
-    pub fn new() -> Self {
-        Self {
-            decay: 0,
-            start_flag: false,
-            fade: false,
-            repeat: false,
-            timer: Timer::new(0),
-        }
-    }
-
     pub fn output(&self) -> u8 {
         if self.fade {
             self.decay

@@ -45,7 +45,7 @@ impl Cartridge {
     }
 
     pub fn read_chr(&self, addr: u16) -> u8 {
-        if self.chr_data.len() == 0 {
+        if self.chr_data.is_empty() {
             self.chr_ram[addr as usize]
         } else {
             let addr = self.mapper.chr_addr(addr);

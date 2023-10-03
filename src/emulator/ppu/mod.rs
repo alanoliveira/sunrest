@@ -17,7 +17,6 @@ use sprite::RawSprite;
 
 const DOTS_PER_LINE: usize = 341;
 const LINES_PER_FRAME: usize = 262;
-const OAM_SIZE: usize = 0x100;
 const MAX_VISIBLE_SPRITES: usize = 8;
 
 pub struct Ppu<M: Memory> {
@@ -67,6 +66,7 @@ impl<M: Memory> Ppu<M> {
         }
     }
 
+    #[allow(dead_code)]
     pub fn debugger(&self) -> debugger::Debugger<M> {
         debugger::Debugger(self)
     }

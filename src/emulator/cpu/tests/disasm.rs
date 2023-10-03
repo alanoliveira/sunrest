@@ -1,3 +1,5 @@
+use crate::emulator::cpu::disasm::*;
+
 use super::*;
 
 macro_rules! push_data {
@@ -31,7 +33,6 @@ fn test_disasm_data_string() {
     push_data!(data, Instruction::Cmp, AddressingMode::Izx, [0x0E]);
     push_data!(data, Instruction::And, AddressingMode::Izy, [0x0F]);
 
-
     let mem = TestDisasmMem(data);
     let mut disasm = Disasm::new(&mem, 0x0000);
     assert_eq!(disasm.disasm_next(), "0000 RTI IMP      [40]");
@@ -50,3 +51,4 @@ fn test_disasm_data_string() {
     let mut disasm = Disasm::new(&mem, 0x0009);
     assert_eq!(disasm.disasm_next(), "0009 BCC $0010    [90, 05]");
 }
+

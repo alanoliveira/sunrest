@@ -28,7 +28,7 @@ pub trait Memory {
 
     fn read_palette(&self, table: u8, palette: u8, color: u8) -> u8 {
         let addr =
-            PALETTE_BASE_ADDR | ((table as u16) << 4) + ((palette as u16) << 2) | (color as u16);
+            PALETTE_BASE_ADDR | (((table as u16) << 4) + ((palette as u16) << 2)) | (color as u16);
         self.read(addr)
     }
 }

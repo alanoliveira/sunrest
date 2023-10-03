@@ -19,10 +19,6 @@ impl LinearCounter {
         self.reload_flag = value;
     }
 
-    pub fn output(&self) -> u8 {
-        self.current
-    }
-
     pub fn ended(&self) -> bool {
         self.current == 0
     }

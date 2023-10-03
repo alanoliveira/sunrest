@@ -12,7 +12,7 @@ impl<M: Memory> IOPorts<'_, M> {
             0x02 => self.read_status(),
             0x04 => self.read_oam_data(),
             0x07 => self.read_data(),
-            0x00..=0x07 => {
+            0x00 | 0x01 | 0x03 | 0x05 | 0x06 => {
                 log!("Attempted to read from unimplemented PPU address: {addr:04X}");
                 0
             }
@@ -29,7 +29,7 @@ impl<M: Memory> IOPorts<'_, M> {
             0x05 => self.write_scroll(val),
             0x06 => self.write_address(val),
             0x07 => self.write_data(val),
-            0x00..=0x07 => {
+            0x02 => {
                 log!("Attempted to write {val:02X} to unimplemented PPU address: {addr:04X}");
             }
             _ => panic!("Invalid PPU write address: {:#06x}", addr),

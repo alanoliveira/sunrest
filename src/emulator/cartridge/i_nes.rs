@@ -9,7 +9,6 @@ struct Flags6 {
     mirroring: MirrorMode,
     has_persistent_memory: bool,
     has_trainer: bool,
-    ignore_mirroring: bool,
     mapper_lo: u8,
 }
 
@@ -23,7 +22,6 @@ impl From<u8> for Flags6 {
             },
             has_persistent_memory: value & 0b0000_0010 != 0,
             has_trainer: value & 0b0000_0100 != 0,
-            ignore_mirroring: value & 0b0000_1000 != 0,
             mapper_lo: (value & 0b1111_0000) >> 4,
         }
     }
@@ -75,7 +73,7 @@ impl INesRomBuilder {
         let chr_size = chr_banks * CHR_ROM_PAGE_SIZE;
         let chr_data = &data[(prg_start + prg_size)..(prg_start + prg_size + chr_size)];
 
-        Cartridge::new(cartridge_info, &prg_data, &chr_data)
+        Cartridge::new(cartridge_info, prg_data, chr_data)
     }
 }
 

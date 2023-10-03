@@ -5,10 +5,6 @@ pub struct Scroll {
 }
 
 impl Scroll {
-    pub fn new() -> Self {
-        Self::default()
-    }
-
     pub fn set_x(&mut self, val: impl Into<Axis>) {
         self.x = val.into();
     }

@@ -35,12 +35,12 @@ impl Disasm<'_> {
         }
     }
 
-    pub fn current_address(&self) -> u16 {
+    pub fn current_addr(&self) -> u16 {
         self.current_addr
     }
 
     pub fn disasm_next(&mut self) -> String {
-        let address = self.current_addr;
+        let address = self.current_addr();
         let mut raw_data = Vec::with_capacity(3);
 
         raw_data.push(self.next_byte());

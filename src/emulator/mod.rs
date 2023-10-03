@@ -64,7 +64,7 @@ impl Emulator {
             dmc_dma: dmc_dma::DmcDma::new(),
             cartridge,
 
-            color_palette: video::DEFAULT_PALETTE.clone(),
+            color_palette: video::DEFAULT_PALETTE,
             cycle: 0,
         }
     }

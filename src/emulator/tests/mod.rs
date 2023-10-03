@@ -59,7 +59,7 @@ fn test_frame_timing() {
             ..Default::default()
         },
         &vec![0xEA; 0x8000],
-        &vec![],
+        &[],
     );
     let mut emulator = Emulator::new(cartridge);
 

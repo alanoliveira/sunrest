@@ -8,12 +8,6 @@ pub struct Signal {
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub struct Color(pub u8, pub u8, pub u8);
 
-impl Color {
-    pub fn new(r: u8, g: u8, b: u8) -> Self {
-        Self(r, g, b)
-    }
-}
-
 pub static DEFAULT_PALETTE: [Color; 64] = [
     Color(0x62, 0x62, 0x62),
     Color(0x0D, 0x22, 0x6B),

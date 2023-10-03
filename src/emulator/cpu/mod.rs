@@ -1,11 +1,10 @@
 #[cfg(test)]
 mod tests;
 
-mod disasm;
+pub mod disasm;
 mod opcodes;
 mod status;
 
-pub use disasm::*;
 pub use status::Status;
 
 use opcodes::*;
@@ -21,11 +20,16 @@ pub trait Memory {
     fn write(&mut self, addr: u16, val: u8);
 }
 
+impl<M: Memory> disasm::DisasmMemory for M {
+    fn read(&self, addr: u16) -> u8 {
+        M::read(self, addr)
+    }
+}
+
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum Signal {
     Irq,
     Nmi,
-    Rst,
 }
 
 pub struct Cpu<M: Memory> {
@@ -76,6 +80,11 @@ impl<M: Memory> Cpu<M> {
         }
     }
 
+    #[allow(dead_code)]
+    pub fn disasm(&self) -> String {
+        disasm::Disasm::new(&self.mem, self.pc).disasm_next()
+    }
+
     pub fn reset(&mut self) {
         self.detour(RESET_VECTOR);
         self.sp = INITIAL_SP;
@@ -106,10 +115,6 @@ impl<M: Memory> Cpu<M> {
                 }
                 Some(Signal::Nmi) => {
                     self.interrupt(false, NMI_VECTOR);
-                    self.busy_cycles += 7;
-                }
-                Some(Signal::Rst) => {
-                    self.reset();
                     self.busy_cycles += 7;
                 }
                 None => {

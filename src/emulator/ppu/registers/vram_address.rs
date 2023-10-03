@@ -75,20 +75,8 @@ impl VramAddress {
         self.0 = set_val(self.0, Self::NAMETABLE_V, val as u16);
     }
 
-    pub fn set_nametable(&mut self, val: u8) {
-        self.0 = set_val(self.0, Self::NAMETABLE_H | Self::NAMETABLE_V, val as u16);
-    }
-
     pub fn set_fine_y(&mut self, val: u8) {
         self.0 = set_val(self.0, Self::FINE_Y, val as u16);
-    }
-
-    pub fn set_lb(&mut self, val: u8) {
-        self.0 = set_val(self.0, 0xFF, val as u16);
-    }
-
-    pub fn set_hb(&mut self, val: u8) {
-        self.0 = set_val(self.0, 0xFF00, val as u16);
     }
 
     pub fn increment(&mut self, val: u16) {
@@ -249,35 +237,9 @@ mod tests {
     }
 
     #[test]
-    fn test_set_nametable() {
-        assert_change!(
-            0b1111_1111_1111_1111,
-            set_nametable(0),
-            0b1111_0011_1111_1111
-        );
-        assert_change!(
-            0b0000_0000_0000_0000,
-            set_nametable(3),
-            0b0000_1100_0000_0000
-        );
-    }
-
-    #[test]
     fn test_set_fine_y() {
         assert_change!(0b1111_1111_1111_1111, set_fine_y(0), 0b1000_1111_1111_1111);
         assert_change!(0b0000_0000_0000_0000, set_fine_y(7), 0b0111_0000_0000_0000);
-    }
-
-    #[test]
-    fn test_set_lb() {
-        assert_change!(0b1111_1111_1111_1111, set_lb(0), 0b1111_1111_0000_0000);
-        assert_change!(0b0000_0000_0000_0000, set_lb(0), 0b0000_0000_0000_0000);
-    }
-
-    #[test]
-    fn test_set_hb() {
-        assert_change!(0b1111_1111_1111_1111, set_hb(0), 0b0000_0000_1111_1111);
-        assert_change!(0b0000_0000_0000_0000, set_hb(0), 0b0000_0000_0000_0000);
     }
 
     #[test]

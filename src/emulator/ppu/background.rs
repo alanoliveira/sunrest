@@ -1,7 +1,5 @@
 use super::*;
 
-const BUFFER_SIZE: usize = 16;
-
 pub struct Background {
     pattern_hi: u16,
     pattern_lo: u16,

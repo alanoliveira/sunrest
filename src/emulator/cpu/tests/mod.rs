@@ -1,3 +1,5 @@
+use super::*;
+
 #[macro_use]
 mod util {
     use super::*;
@@ -57,7 +59,7 @@ mod disasm;
 mod instructions;
 mod nestest;
 
-use super::{AddressingMode as AM, Instruction as IN, Status as S, *};
+use super::{AddressingMode as AM, Instruction as IN, Status as S};
 
 #[derive(Clone)]
 struct TestIO(Vec<u8>);
@@ -86,14 +88,6 @@ fn test_reset() {
     assert_eq!(cpu.pc, 0xAABB);
     assert_eq!(cpu.sp, 0xFD);
     assert_eq!(cpu.p, (S::U | S::I).into());
-}
-
-#[test]
-fn test_rst_signal() {
-    let mut cpu = mk_cpu!(mk_io!(0xAABB: util::opcode_lookup(IN::Nop, AM::Imp), 0xFFFC: 0xBB, 0xFFFD: 0xAA), pc: 0x8000, sp: 0x40, p: S::U | S::B | S::N);
-    cpu.set_signal(Signal::Rst);
-    assert_cpu!(cpu, {pc: 0xAABB, sp: 0xFD, p: S::U | S::I, cycle: 7});
-    assert_cpu!(cpu, {pc: 0xAABC, sp: 0xFD, p: S::U | S::I, cycle: 9});
 }
 
 #[test]
