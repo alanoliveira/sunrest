@@ -1,6 +1,7 @@
 use super::*;
 
 #[test]
+#[ignore]
 fn basics() {
     let mut console = build_emulator("blargg_ppu_tests_2005.09.15b/palette_ram.nes");
     clock_until(&mut console, |c| c.cpu.pc == 0xE412);
@@ -16,6 +17,7 @@ fn basics() {
 }
 
 #[test]
+#[ignore]
 fn power_up_palette() {
     let mut console = build_emulator("blargg_ppu_tests_2005.09.15b/power_up_palette.nes");
     clock_until(&mut console, |c| c.cpu.pc == 0xE3AC);
@@ -27,6 +29,7 @@ fn power_up_palette() {
 }
 
 #[test]
+#[ignore]
 fn sprite_ram() {
     let mut console = build_emulator("blargg_ppu_tests_2005.09.15b/sprite_ram.nes");
     clock_until(&mut console, |c| c.cpu.pc == 0xE467);
@@ -44,6 +47,7 @@ fn sprite_ram() {
 }
 
 #[test]
+#[ignore]
 fn vbl_clear_timing() {
     let mut console = build_emulator("blargg_ppu_tests_2005.09.15b/vbl_clear_time.nes");
     clock_until(&mut console, |c| c.cpu.pc == 0xE3B3);
@@ -56,6 +60,7 @@ fn vbl_clear_timing() {
 }
 
 #[test]
+#[ignore]
 fn vram_access() {
     let mut console = build_emulator("blargg_ppu_tests_2005.09.15b/vram_access.nes");
     clock_until(&mut console, |c| c.cpu.pc == 0xE48D);

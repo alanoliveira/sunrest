@@ -10,6 +10,7 @@ fn extract_error(emulator: &Emulator) -> String {
 }
 
 #[test]
+#[ignore]
 fn basics() {
     let mut emulator = build_emulator("ppu_vbl_nmi/rom_singles/01-vbl_basics.nes");
     clock_until(&mut emulator, |c| c.cpu.pc == 0xE8D5);
@@ -22,6 +23,7 @@ fn basics() {
 }
 
 #[test]
+#[ignore]
 fn vbl_set_time() {
     let mut emulator = build_emulator("ppu_vbl_nmi/rom_singles/02-vbl_set_time.nes");
     clock_until(&mut emulator, |c| c.cpu.pc == 0xE8D5);
@@ -34,6 +36,7 @@ fn vbl_set_time() {
 }
 
 #[test]
+#[ignore]
 fn vbl_clear_time() {
     let mut emulator = build_emulator("ppu_vbl_nmi/rom_singles/03-vbl_clear_time.nes");
     clock_until(&mut emulator, |c| c.cpu.pc == 0xE8D5);
@@ -46,6 +49,7 @@ fn vbl_clear_time() {
 }
 
 #[test]
+#[ignore]
 fn nmi_control() {
     let mut emulator = build_emulator("ppu_vbl_nmi/rom_singles/04-nmi_control.nes");
     clock_until(&mut emulator, |c| c.cpu.pc == 0xE8D5);
@@ -58,6 +62,7 @@ fn nmi_control() {
 }
 
 #[test]
+#[ignore]
 fn nmi_timing() {
     let mut emulator = build_emulator("ppu_vbl_nmi/rom_singles/05-nmi_timing.nes");
     clock_until(&mut emulator, |c| c.cpu.pc == 0xE8D5);
@@ -70,6 +75,7 @@ fn nmi_timing() {
 }
 
 #[test]
+#[ignore]
 fn suppressmemn() {
     let mut emulator = build_emulator("ppu_vbl_nmi/rom_singles/06-suppression.nes");
     clock_until(&mut emulator, |c| c.cpu.pc == 0xE8D5);
@@ -82,6 +88,7 @@ fn suppressmemn() {
 }
 
 #[test]
+#[ignore]
 fn nmi_on_timing() {
     let mut emulator = build_emulator("ppu_vbl_nmi/rom_singles/07-nmi_on_timing.nes");
     clock_until(&mut emulator, |c| c.cpu.pc == 0xE8D5);
@@ -94,6 +101,7 @@ fn nmi_on_timing() {
 }
 
 #[test]
+#[ignore]
 fn nmi_off_timing() {
     let mut emulator = build_emulator("ppu_vbl_nmi/rom_singles/08-nmi_off_timing.nes");
     clock_until(&mut emulator, |c| c.cpu.pc == 0xE8D5);
@@ -106,6 +114,7 @@ fn nmi_off_timing() {
 }
 
 #[test]
+#[ignore]
 fn even_odd_frames() {
     let mut emulator = build_emulator("ppu_vbl_nmi/rom_singles/09-even_odd_frames.nes");
     clock_until(&mut emulator, |c| c.cpu.pc == 0xE8D5);
@@ -118,6 +127,7 @@ fn even_odd_frames() {
 }
 
 #[test]
+#[ignore]
 fn even_odd_timing() {
     let mut emulator = build_emulator("ppu_vbl_nmi/rom_singles/10-even_odd_timing.nes");
     clock_until(&mut emulator, |c| c.cpu.pc == 0xE8D5);

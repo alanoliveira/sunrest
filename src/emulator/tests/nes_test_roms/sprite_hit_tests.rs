@@ -1,6 +1,7 @@
 use super::*;
 
 #[test]
+#[ignore]
 fn basics() {
     let mut emulator = build_emulator("sprite_hit_tests_2005.10.05/01.basics.nes");
     clock_until(&mut emulator, |c| c.cpu.pc == 0xE635);
@@ -21,6 +22,7 @@ fn basics() {
 }
 
 #[test]
+#[ignore]
 fn alignment() {
     let mut emulator = build_emulator("sprite_hit_tests_2005.10.05/02.alignment.nes");
     clock_until(&mut emulator, |c| c.cpu.pc == 0xE635);
@@ -40,6 +42,7 @@ fn alignment() {
 }
 
 #[test]
+#[ignore]
 fn corners() {
     let mut emulator = build_emulator("sprite_hit_tests_2005.10.05/03.corners.nes");
     clock_until(&mut emulator, |c| c.cpu.pc == 0xE635);
@@ -54,6 +57,7 @@ fn corners() {
 }
 
 #[test]
+#[ignore]
 fn flip() {
     let mut emulator = build_emulator("sprite_hit_tests_2005.10.05/04.flip.nes");
     clock_until(&mut emulator, |c| c.cpu.pc == 0xE5B6);
@@ -67,6 +71,7 @@ fn flip() {
 }
 
 #[test]
+#[ignore]
 fn left_clip() {
     let mut emulator = build_emulator("sprite_hit_tests_2005.10.05/05.left_clip.nes");
     clock_until(&mut emulator, |c| c.cpu.pc == 0xE635);
@@ -84,6 +89,7 @@ fn left_clip() {
 }
 
 #[test]
+#[ignore]
 fn right_edge() {
     let mut emulator = build_emulator("sprite_hit_tests_2005.10.05/06.right_edge.nes");
     clock_until(&mut emulator, |c| c.cpu.pc == 0xE635);
@@ -99,6 +105,7 @@ fn right_edge() {
 }
 
 #[test]
+#[ignore]
 fn screen_bottom() {
     let mut emulator = build_emulator("sprite_hit_tests_2005.10.05/07.screen_bottom.nes");
     clock_until(&mut emulator, |c| c.cpu.pc == 0xE635);
@@ -115,6 +122,7 @@ fn screen_bottom() {
 }
 
 #[test]
+#[ignore]
 fn double_height() {
     let mut emulator = build_emulator("sprite_hit_tests_2005.10.05/08.double_height.nes");
     clock_until(&mut emulator, |c| c.cpu.pc == 0xE635);
@@ -128,6 +136,7 @@ fn double_height() {
 }
 
 #[test]
+#[ignore]
 fn timing_basics() {
     let mut emulator = build_emulator("sprite_hit_tests_2005.10.05/09.timing_basics.nes");
     clock_until(&mut emulator, |c| c.cpu.pc == 0xE64C);
@@ -146,6 +155,7 @@ fn timing_basics() {
 }
 
 #[test]
+#[ignore]
 fn timing_order() {
     let mut emulator = build_emulator("sprite_hit_tests_2005.10.05/10.timing_order.nes");
     clock_until(&mut emulator, |c| c.cpu.pc == 0xE635);
@@ -164,6 +174,7 @@ fn timing_order() {
 }
 
 #[test]
+#[ignore]
 fn edge_timing() {
     let mut emulator = build_emulator("sprite_hit_tests_2005.10.05/11.edge_timing.nes");
     clock_until(&mut emulator, |c| c.cpu.pc == 0xE635);

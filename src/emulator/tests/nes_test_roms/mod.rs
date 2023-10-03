@@ -26,8 +26,7 @@ fn clock_until(emulator: &mut Emulator, f: fn(&Emulator) -> bool) {
 }
 
 fn test_roms_path(rom_name: &str) -> path::PathBuf {
-    path::PathBuf::from(env!("CARGO_MANIFEST_DIR"))
-        .join("assets")
-        .join("nes-test-roms")
-        .join(rom_name)
+    let nes_test_roms_path =
+        std::env::var("NES_TEST_ROMS_PATH").expect("NES_TEST_ROMS_PATH not set");
+    path::PathBuf::from(nes_test_roms_path).join(rom_name)
 }

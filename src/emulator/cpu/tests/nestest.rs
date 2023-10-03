@@ -16,10 +16,15 @@ impl Memory for NestestIO {
 }
 
 #[test]
+#[ignore]
 fn nestest_test() {
     let mut io = NestestIO([0; 0x10000]);
-    let nestest_prg: &[u8] = include!("nestest.in");
-    io.0[0x8000..0x8000 + nestest_prg.len()].copy_from_slice(nestest_prg);
+
+    let nes_test_roms_path =
+        std::env::var("NES_TEST_ROMS_PATH").expect("NES_TEST_ROMS_PATH not set");
+    let path = std::path::PathBuf::from(nes_test_roms_path).join("other/nestest.nes");
+    let nestest_rom_data = std::fs::read(path).unwrap();
+    io.0[0x8000..0xC000].copy_from_slice(&nestest_rom_data[0x0010..0x4010]);
     let mut cpu = Cpu::new(io);
     cpu.pc = 0x8000;
     cpu.p = (S::U | S::I).into();
