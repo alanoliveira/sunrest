@@ -10,6 +10,7 @@ pub struct Apu {
     pub pulse2: channels::pulse::Pulse,
     pub triangle: channels::triangle::Triangle,
     pub noise: channels::noise::Noise,
+    pub dmc: channels::dmc::Dmc,
 
     irq_inhibit: bool,
     sequencer_period: SequencerPeriod,
@@ -24,6 +25,7 @@ impl Apu {
             pulse2: channels::pulse::Pulse::new(channels::pulse::Kind::Pulse2),
             triangle: channels::triangle::Triangle::new(),
             noise: channels::noise::Noise::new(),
+            dmc: channels::dmc::Dmc::new(),
 
             irq_inhibit: false,
             sequencer_period: SequencerPeriod::FourSteps,
@@ -32,12 +34,17 @@ impl Apu {
         }
     }
 
+    pub fn is_hi_cycle(&self) -> bool {
+        self.timer_cycle % 2 == 1
+    }
+
     pub fn clock_timer(&mut self) {
         self.timer_cycle += 1;
         if self.timer_cycle % 2 == 0 {
             self.pulse1.clock_timer();
             self.pulse2.clock_timer();
             self.noise.clock_timer();
+            self.dmc.clock_timer();
         }
         self.triangle.clock_timer();
     }
@@ -74,11 +81,13 @@ impl Apu {
             0x04..=0x07 => self.pulse2.write(addr - 0x04, val),
             0x08..=0x0B => self.triangle.write(addr - 0x08, val),
             0x0C..=0x0F => self.noise.write(addr - 0x0C, val),
+            0x10..=0x13 => self.dmc.write(addr - 0x10, val),
             0x15 => {
                 self.pulse1.set_enabled(val & 0x01 != 0);
                 self.pulse2.set_enabled(val & 0x02 != 0);
                 self.triangle.set_enabled(val & 0x04 != 0);
                 self.noise.set_enabled(val & 0x08 != 0);
+                self.dmc.set_enabled(val & 0x10 != 0);
             }
             0x17 => {
                 if val & 0x80 == 0 {
@@ -102,6 +111,7 @@ impl Apu {
                 status |= (self.pulse2.enabled() as u8) << 1;
                 status |= (self.triangle.enabled() as u8) << 2;
                 status |= (self.noise.enabled() as u8) << 3;
+                status |= (self.dmc.enabled() as u8) << 4;
                 status
             }
             _ => {

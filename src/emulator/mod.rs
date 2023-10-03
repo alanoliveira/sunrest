@@ -5,6 +5,7 @@ mod apu;
 mod audio;
 mod bus;
 mod cpu;
+mod dmc_dma;
 mod oam_dma;
 mod ppu;
 mod video;
@@ -26,6 +27,7 @@ pub struct Emulator {
     ppu: PpuWrapper,
     apu: ApuWrapper,
     oam_dma: oam_dma::OamDma,
+    dmc_dma: dmc_dma::DmcDma,
     cartridge: Rc<RefCell<cartridge::Cartridge>>,
 
     color_palette: [video::Color; 64],
@@ -59,6 +61,7 @@ impl Emulator {
             ppu: PpuWrapper(ppu),
             apu: ApuWrapper(apu),
             oam_dma: oam_dma::OamDma::new(),
+            dmc_dma: dmc_dma::DmcDma::new(),
             cartridge,
 
             color_palette: video::DEFAULT_PALETTE.clone(),
@@ -82,7 +85,7 @@ impl Emulator {
             pulse2: apu.pulse2.output(),
             triangle: apu.triangle.output(),
             noise: apu.noise.output(),
-            dmc: 0,
+            dmc: apu.dmc.output(),
         }
     }
 
@@ -107,11 +110,15 @@ impl Emulator {
         if self.cycle % 12 == 0 {
             if self.oam_dma.is_active() {
                 self.clock_oam_dma();
+            } else if self.dmc_dma.is_active() {
+                self.clock_dmc_dma();
             } else {
                 self.clock_cpu();
+                self.check_dmc_dma();
             }
 
             self.apu.as_mut().clock_timer();
+            self.check_dmc_dma();
         }
 
         // ~53.69mhz
@@ -148,6 +155,28 @@ impl Emulator {
             self.oam_dma.write(&mut self.cpu.mem);
         } else {
             self.oam_dma.read(&self.cpu.mem);
+        }
+    }
+
+    fn clock_dmc_dma(&mut self) {
+        let mut apu = self.apu.as_mut();
+        if apu.is_hi_cycle() {
+            self.dmc_dma.dummy();
+        } else {
+            self.dmc_dma.read(&self.cpu.mem);
+            if !self.dmc_dma.is_active() {
+                apu.dmc.load_sample_buffer(self.dmc_dma.buffer);
+            }
+        }
+    }
+
+    fn check_dmc_dma(&mut self) {
+        if self.dmc_dma.is_active() {
+            return;
+        }
+
+        if let Some(dmc_dma_addr) = self.apu.as_ref().dmc.is_waiting() {
+            self.dmc_dma.prepare(dmc_dma_addr);
         }
     }
 }

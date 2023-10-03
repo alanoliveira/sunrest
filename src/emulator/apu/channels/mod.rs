@@ -1,6 +1,7 @@
 pub mod noise;
 pub mod pulse;
 pub mod triangle;
+pub mod dmc;
 
 mod envelope;
 mod length;
