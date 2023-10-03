@@ -83,11 +83,11 @@ impl Apu {
             0x0C..=0x0F => self.noise.write(addr - 0x0C, val),
             0x10..=0x13 => self.dmc.write(addr - 0x10, val),
             0x15 => {
-                self.pulse1.set_enabled(val & 0x01 != 0);
-                self.pulse2.set_enabled(val & 0x02 != 0);
-                self.triangle.set_enabled(val & 0x04 != 0);
-                self.noise.set_enabled(val & 0x08 != 0);
-                self.dmc.set_enabled(val & 0x10 != 0);
+                self.pulse1.length.set_enabled(val & 0x01 != 0);
+                self.pulse2.length.set_enabled(val & 0x02 != 0);
+                self.triangle.length.set_enabled(val & 0x04 != 0);
+                self.noise.length.set_enabled(val & 0x08 != 0);
+                self.dmc.memory_reader.set_enabled(val & 0x10 != 0);
             }
             0x17 => {
                 if val & 0x80 == 0 {
@@ -107,11 +107,11 @@ impl Apu {
         match addr {
             0x15 => {
                 let mut status = 0;
-                status |= self.pulse1.enabled() as u8;
-                status |= (self.pulse2.enabled() as u8) << 1;
-                status |= (self.triangle.enabled() as u8) << 2;
-                status |= (self.noise.enabled() as u8) << 3;
-                status |= (self.dmc.enabled() as u8) << 4;
+                status |= self.pulse1.length.enabled() as u8;
+                status |= (self.pulse2.length.enabled() as u8) << 1;
+                status |= (self.triangle.length.enabled() as u8) << 2;
+                status |= (self.noise.length.enabled() as u8) << 3;
+                status |= (self.dmc.memory_reader.enabled() as u8) << 4;
                 status
             }
             _ => {

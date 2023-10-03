@@ -26,7 +26,7 @@ impl Envelope {
         if self.fade {
             self.decay
         } else {
-            self.timer.period() as u8
+            self.timer.period as u8
         }
     }
 

@@ -1,32 +1,22 @@
+mod shift;
+
 use super::*;
+use shift::*;
 
 pub struct Noise {
-    enabled: bool,
-    shift: NoiseShift,
+    shift: Shift,
     envelope: Envelope,
     timer: Timer,
-    length: Length,
+    pub length: Length,
 }
 
 impl Noise {
     pub fn new() -> Self {
         Self {
-            enabled: false,
-            shift: NoiseShift::new(),
+            shift: Shift::default(),
             envelope: Envelope::default(),
-            timer: Timer::new(0),
+            timer: Timer::default(),
             length: Length::default(),
-        }
-    }
-
-    pub fn enabled(&self) -> bool {
-        self.length.output()
-    }
-
-    pub fn set_enabled(&mut self, enabled: bool) {
-        self.enabled = enabled;
-        if !enabled {
-            self.length.reset();
         }
     }
 
@@ -34,23 +24,23 @@ impl Noise {
         match addr {
             0x00 => {
                 self.envelope.fade = val & 0x10 == 0;
-                self.envelope.timer.set_period((val & 0x0F) as u16);
+                self.envelope.timer.period = (val & 0x0F) as u16;
                 self.envelope.repeat = val & 0x20 != 0;
+                self.length.halted = val & 0x20 != 0;
                 self.envelope.start();
             }
             0x01 => {} // unused
             0x02 => {
-                self.timer.set_period(TIMER_PERIOD[(val & 0x0F) as usize]);
-                self.shift.mode = if val & 0x80 != 0 {
-                    NoiseShiftMode::Six
+                self.timer.period = TIMER_PERIOD[(val & 0x0F) as usize];
+                let mode = if val & 0x80 != 0 {
+                    ShiftMode::Six
                 } else {
-                    NoiseShiftMode::One
+                    ShiftMode::One
                 };
+                self.shift.set_mode(mode)
             }
             0x03 => {
-                if self.enabled {
-                    self.length.set(val >> 3);
-                }
+                self.length.set_by_index(val >> 3);
                 self.envelope.start();
             }
             _ => unreachable!(),
@@ -72,7 +62,7 @@ impl Noise {
     }
 
     pub fn output(&self) -> u8 {
-        let active = self.enabled && self.length.output() && self.shift.output();
+        let active = self.length.enabled() && self.shift.output();
         if active {
             self.envelope.output()
         } else {

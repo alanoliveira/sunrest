@@ -1,19 +1,25 @@
-pub enum Mode {
+pub enum ShiftMode {
     One,
     Six,
 }
 
-pub struct NoiseShift {
+pub struct Shift {
     data: u16,
-    pub mode: Mode,
+    mode: ShiftMode,
 }
 
-impl NoiseShift {
-    pub fn new() -> Self {
+impl Default for Shift {
+    fn default() -> Self {
         Self {
             data: 1,
-            mode: Mode::One,
+            mode: ShiftMode::One,
         }
+    }
+}
+
+impl Shift {
+    pub fn set_mode(&mut self, mode: ShiftMode) {
+        self.mode = mode;
     }
 
     pub fn clock(&mut self) {
@@ -29,8 +35,8 @@ impl NoiseShift {
     fn random_bit(&self) -> u16 {
         let bit1 = self.data & 1;
         let bit2 = match self.mode {
-            Mode::One => (self.data >> 1) & 1,
-            Mode::Six => (self.data >> 6) & 1,
+            ShiftMode::One => (self.data >> 1) & 1,
+            ShiftMode::Six => (self.data >> 6) & 1,
         };
         bit1 ^ bit2
     }

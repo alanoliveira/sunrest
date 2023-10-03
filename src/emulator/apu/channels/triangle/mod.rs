@@ -1,17 +1,18 @@
+mod linear_counter;
+
 use super::*;
+use linear_counter::*;
 
 pub struct Triangle {
-    enabled: bool,
     linear_counter: LinearCounter,
     sequencer: Sequencer<32>,
     timer: Timer,
-    length: Length,
+    pub length: Length,
 }
 
 impl Triangle {
     pub fn new() -> Self {
         Self {
-            enabled: false,
             sequencer: Sequencer::default(),
             timer: Timer::default(),
             length: Length::default(),
@@ -19,43 +20,26 @@ impl Triangle {
         }
     }
 
-    pub fn enabled(&self) -> bool {
-        self.length.output()
-    }
-
-    pub fn set_enabled(&mut self, enabled: bool) {
-        self.enabled = enabled;
-        if !enabled {
-            self.length.reset();
-        }
-    }
-
     pub fn write(&mut self, addr: u16, val: u8) {
         match addr {
             0x00 => {
-                self.linear_counter.set_enabled(val & 0x80 != 0);
-                self.linear_counter.timer.set_period((val & 0x7F) as u16);
+                self.length.halted = val & 0x80 != 0;
+                self.linear_counter.set_control_flag(val & 0x80 != 0);
+                self.linear_counter.set_load(val & 0x7F);
             }
             0x01 => {} // unused
-            0x02 => {
-                self.timer
-                    .set_period((self.timer.period() & 0xFF00) | val as u16);
-            }
+            0x02 => self.timer.set_period_lo(val),
             0x03 => {
-                self.timer
-                    .set_period((self.timer.period() & 0x00FF) | ((val as u16 & 0x07) << 8));
-                self.linear_counter.halt = true;
-
-                if self.enabled {
-                    self.length.set(val >> 3);
-                }
+                self.timer.set_period_hi(val & 0x07);
+                self.linear_counter.set_reload_flag(true);
+                self.length.set_by_index(val >> 3);
             }
             _ => unreachable!(),
         }
     }
 
     pub fn clock_timer(&mut self) {
-        if self.timer.clock() && self.length.output() && !self.linear_counter.timer.is_zero() {
+        if self.timer.clock() && self.length.enabled() && !self.linear_counter.ended() {
             self.sequencer.clock();
         }
     }
@@ -69,7 +53,7 @@ impl Triangle {
     }
 
     pub fn output(&self) -> u8 {
-        let active = self.enabled && self.length.output() && self.timer.period() >= 3;
+        let active = self.length.enabled() && self.timer.period >= 3;
 
         if active {
             TRIANGLE_SEQUENCE[self.sequencer.get() as usize]

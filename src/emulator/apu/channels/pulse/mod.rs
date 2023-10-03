@@ -1,4 +1,9 @@
+mod duty_cycle;
+mod sweep;
+
 use super::*;
+use duty_cycle::*;
+use sweep::*;
 
 pub enum Kind {
     Pulse1,
@@ -6,22 +11,20 @@ pub enum Kind {
 }
 
 pub struct Pulse {
-    enabled: bool,
+    pub length: Length,
     timer: Timer,
-    duty_cycle: PulseDutyCycle,
+    duty_cycle: DutyCycle,
     sequencer: Sequencer<8>,
-    length: Length,
+    kind: Kind,
     envelope: Envelope,
     sweep: Sweep,
-    kind: Kind,
 }
 
 impl Pulse {
     pub fn new(kind: Kind) -> Self {
         Self {
-            enabled: false,
             timer: Timer::new(0),
-            duty_cycle: PulseDutyCycle::Duty12_5,
+            duty_cycle: DutyCycle::Duty12_5,
             sequencer: Sequencer::default(),
             length: Length::default(),
             envelope: Envelope::default(),
@@ -30,51 +33,32 @@ impl Pulse {
         }
     }
 
-    pub fn enabled(&self) -> bool {
-        self.length.output()
-    }
-
-    pub fn set_enabled(&mut self, enabled: bool) {
-        self.enabled = enabled;
-        if !enabled {
-            self.length.reset();
-        }
-    }
-
     pub fn write(&mut self, addr: u16, val: u8) {
         match addr {
             0x00 => {
                 self.duty_cycle = (val >> 6).into();
-                self.envelope.timer.set_period((val & 0x0F) as u16);
+                self.envelope.timer.period = (val & 0x0F) as u16;
                 self.envelope.repeat = val & 0x20 != 0;
+                self.length.halted = val & 0x20 != 0;
                 self.envelope.fade = val & 0x10 == 0;
                 self.envelope.start();
             }
-            0x01 => {
-                self.sweep.enabled = val & 0x80 != 0;
-                self.sweep.negate = val & 0x08 != 0;
-                self.sweep.shift = val & 0x07;
-                self.sweep.timer.set_period((val >> 4) as u16 & 0x07);
-                self.sweep.reload_flag = true;
-            }
+            0x01 => self.sweep = val.into(),
             0x02 => self.timer.set_period_lo(val),
             0x03 => {
                 self.timer.set_period_hi(val & 0x07);
                 self.sequencer.reset();
-                if self.enabled {
-                    self.length.set(val >> 3);
-                }
+                self.length.set_by_index(val >> 3);
             }
             _ => unreachable!(),
         }
     }
 
     pub fn output(&self) -> u8 {
-        let active = self.enabled
+        let active = self.length.enabled()
             && self.duty_cycle.output(self.sequencer.get())
-            && self.length.output()
-            && self.timer.period() >= 8
-            && self.timer.period() <= 0x7FF;
+            && self.timer.period >= 8
+            && self.timer.period <= 0x7FF;
         if active {
             self.envelope.output()
         } else {
@@ -98,15 +82,14 @@ impl Pulse {
 
     pub fn clock_sweep(&mut self) {
         if self.sweep.active() {
-            let mut delta = self.timer.period() >> self.sweep.shift;
-            if self.sweep.negate {
+            let mut delta = self.timer.period >> self.sweep.shift();
+            if self.sweep.negate() {
                 delta = match self.kind {
                     Kind::Pulse1 => !delta,
                     Kind::Pulse2 => !delta + 1,
                 };
             }
-            self.timer
-                .set_period(self.timer.period().wrapping_add(delta));
+            self.timer.increment_period(delta)
         }
         self.sweep.clock();
     }
