@@ -4,7 +4,7 @@ use crate::emulator;
 
 const SCREEN_WIDTH: usize = 256;
 const SCREEN_HEIGHT: usize = 240;
-const SAMPLE_BUFFER_SIZE: usize = 2048;
+const SAMPLE_BUFFER_SIZE: usize = 512;
 const SAMPLE_RATE: usize = 44100;
 
 #[derive(PartialEq, Eq)]
@@ -62,45 +62,49 @@ impl<E: engines::UiEngine> Ui<E> {
 
             joypad1: emulator::input_devices::StandardJoypad::new(),
             joypad2: emulator::input_devices::StandardJoypad::new(),
-            sample_buffer: Vec::with_capacity(SAMPLE_BUFFER_SIZE * 2),
+            sample_buffer: Vec::with_capacity(SAMPLE_BUFFER_SIZE),
         }
     }
 
     pub fn run(&mut self) {
         let mut prev_video_signal = self.emulator.video_signal();
 
+        let mut fps_calc = FpsCalc::new();
         let sample_clock = 21_477_272 / SAMPLE_RATE;
         while self.state == UiState::Running {
-            self.emulator.clock();
-            self.emulator
-                .clock_input_devices(&mut self.joypad1, &mut self.joypad2);
+            while self.sample_buffer.len() < self.sample_buffer.capacity() {
+                self.emulator.clock();
+                self.emulator
+                    .clock_input_devices(&mut self.joypad1, &mut self.joypad2);
 
-            let video_signal = self.emulator.video_signal();
-            if video_signal != prev_video_signal {
-                self.draw_point(
-                    prev_video_signal.x,
-                    prev_video_signal.y,
-                    prev_video_signal.color,
-                );
+                let video_signal = self.emulator.video_signal();
+                if video_signal != prev_video_signal {
+                    prev_video_signal = video_signal;
+                    self.draw_point(
+                        prev_video_signal.x,
+                        prev_video_signal.y,
+                        prev_video_signal.color,
+                    );
 
-                if video_signal.x == SCREEN_WIDTH - 1 && video_signal.y == SCREEN_HEIGHT - 1 {
-                    self.engine.present();
-                    self.engine.poll_events(&mut self.event_buffer);
-                    self.process_events();
+                    if video_signal.x == SCREEN_WIDTH - 1 && video_signal.y == SCREEN_HEIGHT - 1 {
+                        self.engine.present();
+                        self.engine.poll_events(&mut self.event_buffer);
+                        self.process_events();
+
+                        if let Some(fps) = fps_calc.update() {
+                            self.append_title(&format!("{:.02} fps", fps));
+                        }
+                    }
                 }
 
-                prev_video_signal = video_signal;
-            }
-
-            if self.emulator.cycle % sample_clock == 0 {
-                let sample = self.emulator.audio_signal().sample();
-                if self.sample_buffer.len() < self.sample_buffer.capacity() {
+                if self.emulator.cycle % sample_clock == 0 {
+                    let sample = self.emulator.audio_signal().sample();
                     self.sample_buffer.push(sample);
                 }
+            }
 
-                if self.engine.feed_samples(self.sample_buffer.as_slice()) {
-                    self.sample_buffer.clear();
-                }
+            if self.engine.feed_samples(self.sample_buffer.as_slice()) {
+                self.sample_buffer.clear();
             }
         }
     }
@@ -151,5 +155,33 @@ impl<E: engines::UiEngine> Ui<E> {
         if x < SCREEN_WIDTH && y < SCREEN_HEIGHT {
             self.engine.draw_point(x, y, color);
         }
+    }
+}
+
+struct FpsCalc {
+    last_frame_time: std::time::Instant,
+    frame_count: usize,
+}
+
+impl FpsCalc {
+    fn new() -> Self {
+        Self {
+            last_frame_time: std::time::Instant::now(),
+            frame_count: 0,
+        }
+    }
+
+    fn update(&mut self) -> Option<f32> {
+        self.frame_count += 1;
+        if self.frame_count != 60 {
+            return None;
+        }
+
+        let now = std::time::Instant::now();
+        let elapsed = now - self.last_frame_time;
+        let fps = self.frame_count as f32 / elapsed.as_secs_f32();
+        self.frame_count = 0;
+        self.last_frame_time = now;
+        Some(fps)
     }
 }

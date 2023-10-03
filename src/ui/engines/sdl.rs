@@ -39,7 +39,6 @@ impl SdlContext {
         let mut canvas = window
             .into_canvas()
             .accelerated()
-            .present_vsync()
             .build()
             .map_err(|e| e.to_string())
             .expect("Failed to create canvas");
