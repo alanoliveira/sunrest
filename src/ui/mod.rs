@@ -1,7 +1,11 @@
 pub mod engines;
 
-use crate::emulator;
+mod settings;
+pub use settings::Settings;
 
+use super::*;
+
+const FPS: usize = 60;
 const SCREEN_WIDTH: usize = 256;
 const SCREEN_HEIGHT: usize = 240;
 const SAMPLE_BUFFER_SIZE: usize = 512;
@@ -43,6 +47,7 @@ pub struct Ui<E: engines::UiEngine> {
     engine: E,
     event_buffer: Vec<UiEvent>,
     state: UiState,
+    settings: Settings,
 
     joypad1: emulator::input_devices::StandardJoypad,
     joypad2: emulator::input_devices::StandardJoypad,
@@ -59,6 +64,7 @@ impl<E: engines::UiEngine> Ui<E> {
             engine,
             event_buffer: Vec::new(),
             state: UiState::Running,
+            settings: Settings::from_env(),
 
             joypad1: emulator::input_devices::StandardJoypad::new(),
             joypad2: emulator::input_devices::StandardJoypad::new(),
@@ -70,7 +76,9 @@ impl<E: engines::UiEngine> Ui<E> {
         let mut prev_video_signal = self.emulator.video_signal();
 
         let mut fps_calc = FpsCalc::new();
-        let sample_clock = 21_477_272 / SAMPLE_RATE;
+        let sample_clock_ratio = 21_477_272 as f32 / SAMPLE_RATE as f32;
+        let sample_clock = (sample_clock_ratio * self.settings.speed) as usize;
+        let frame_skip = (self.settings.speed as usize).saturating_sub(1);
         while self.state == UiState::Running {
             while self.sample_buffer.len() < self.sample_buffer.capacity() {
                 self.emulator.clock();
@@ -87,7 +95,9 @@ impl<E: engines::UiEngine> Ui<E> {
                     );
 
                     if video_signal.x == SCREEN_WIDTH - 1 && video_signal.y == SCREEN_HEIGHT - 1 {
-                        self.engine.present();
+                        if fps_calc.frame % (1 + frame_skip) == 0 {
+                            self.engine.present();
+                        }
                         self.engine.poll_events(&mut self.event_buffer);
                         self.process_events();
 
@@ -99,7 +109,7 @@ impl<E: engines::UiEngine> Ui<E> {
 
                 if self.emulator.cycle % sample_clock == 0 {
                     let sample = self.emulator.audio_signal().sample();
-                    self.sample_buffer.push(sample);
+                    self.sample_buffer.push(sample * self.settings.volume);
                 }
             }
 
@@ -160,27 +170,26 @@ impl<E: engines::UiEngine> Ui<E> {
 
 struct FpsCalc {
     last_frame_time: std::time::Instant,
-    frame_count: usize,
+    frame: usize,
 }
 
 impl FpsCalc {
     fn new() -> Self {
         Self {
             last_frame_time: std::time::Instant::now(),
-            frame_count: 0,
+            frame: 0,
         }
     }
 
     fn update(&mut self) -> Option<f32> {
-        self.frame_count += 1;
-        if self.frame_count != 60 {
+        self.frame += 1;
+        if self.frame % FPS != 0 {
             return None;
         }
 
         let now = std::time::Instant::now();
         let elapsed = now - self.last_frame_time;
-        let fps = self.frame_count as f32 / elapsed.as_secs_f32();
-        self.frame_count = 0;
+        let fps = FPS as f32 / elapsed.as_secs_f32();
         self.last_frame_time = now;
         Some(fps)
     }

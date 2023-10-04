@@ -25,6 +25,15 @@ sunrest <rom path>
 | Backspace    | select  |
 
 
+### Settings
+
+The following environment variables can be used to configure the emulator:
+
+| env            | description                         |
+| -------------- | ----------------------------------- |
+| SUNREST_SPEED  | emulator speed ratio (default: 1.0) |
+| SUNREST_VOLUME | audio volume (default: 1.0)         |
+
 ### Supported Roms
 
 - Only the iNes v1 format (`.nes`) is supported for ROMs.
