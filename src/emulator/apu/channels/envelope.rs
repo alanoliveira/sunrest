@@ -30,14 +30,13 @@ impl Envelope {
             self.start_flag = false;
             self.decay = MAX_DECAY;
             self.timer.reset();
-            self.timer.clock();
         }
 
         if self.timer.clock() && !start_flag {
-            if self.repeat {
-                self.decay = MAX_DECAY;
-            } else if self.decay > 0 {
+            if self.decay > 0 {
                 self.decay -= 1;
+            } else if self.repeat {
+                self.decay = MAX_DECAY;
             }
         }
     }
