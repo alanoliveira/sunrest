@@ -3,6 +3,7 @@ mod linear_counter;
 use super::*;
 use linear_counter::*;
 
+#[derive(Clone)]
 pub struct Triangle {
     linear_counter: LinearCounter,
     sequencer: Sequencer<32>,

@@ -1,5 +1,6 @@
 use super::*;
 
+#[derive(Clone)]
 pub struct Background {
     pattern_hi: u16,
     pattern_lo: u16,

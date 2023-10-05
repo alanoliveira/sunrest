@@ -137,6 +137,16 @@ impl UiEngine for SdlEngine {
                 } => event_buffer.push(UiEvent::Quit),
 
                 Event::KeyDown {
+                    keycode: Some(Keycode::LeftBracket),
+                    ..
+                } => event_buffer.push(UiEvent::SaveState),
+
+                Event::KeyDown {
+                    keycode: Some(Keycode::RightBracket),
+                    ..
+                } => event_buffer.push(UiEvent::LoadState),
+
+                Event::KeyDown {
                     keycode: Some(keycode),
                     ..
                 }

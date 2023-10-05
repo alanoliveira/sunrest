@@ -5,6 +5,7 @@ use super::*;
 use memory_reader::*;
 use output_unit::*;
 
+#[derive(Clone)]
 pub struct Dmc {
     output_unit: OutputUnit,
     pub memory_reader: MemoryReader,
@@ -47,7 +48,6 @@ impl Dmc {
     }
 
     pub fn load_sample_buffer(&mut self, val: u8) {
-
         self.output_unit.feed(val);
         if self.memory_reader.increment_address().is_err() && self.irq_enabled {
             // IRQ

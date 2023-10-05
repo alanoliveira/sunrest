@@ -1,8 +1,10 @@
+#[derive(Clone)]
 pub enum ShiftMode {
     One,
     Six,
 }
 
+#[derive(Clone)]
 pub struct Shift {
     data: u16,
     mode: ShiftMode,

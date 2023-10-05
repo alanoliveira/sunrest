@@ -51,4 +51,3 @@ fn test_disasm_data_string() {
     let mut disasm = Disasm::new(&mem, 0x0009);
     assert_eq!(disasm.disasm_next(), "0009 BCC $0010    [90, 05]");
 }
-

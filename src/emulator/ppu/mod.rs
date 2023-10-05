@@ -8,12 +8,14 @@ mod oam;
 mod pixel;
 mod registers;
 mod sprite;
+mod time_machine;
 
 pub mod bus;
 
 pub use memory::*;
 use pixel::{Kind as PixelKind, Pixel};
 use sprite::RawSprite;
+pub use time_machine::TimeMachine;
 
 const DOTS_PER_LINE: usize = 341;
 const LINES_PER_FRAME: usize = 262;

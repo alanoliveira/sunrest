@@ -13,16 +13,18 @@ sunrest <rom path>
 
 ### Buttons
 
-| Keyboard Key | Nes Pad |
-| ------------ | ------- |
-| A            | Left    |
-| S            | Down    |
-| D            | Right   |
-| W            | Up      |
-| J            | A       |
-| K            | B       |
-| Enter        | start   |
-| Backspace    | select  |
+| Keyboard Key | Nes Pad    |
+| ------------ | ---------- |
+| A            | Left       |
+| S            | Down       |
+| D            | Right      |
+| W            | Up         |
+| J            | A          |
+| K            | B          |
+| Enter        | start      |
+| Backspace    | select     |
+| [            | save state |
+| ]            | load state |
 
 
 ### Settings

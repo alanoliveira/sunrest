@@ -8,11 +8,13 @@ mod cpu;
 mod dmc_dma;
 mod oam_dma;
 mod ppu;
+mod time_machine;
 mod video;
 
 pub mod cartridge;
 pub mod input_devices;
 
+pub use time_machine::TimeMachine;
 pub use video::{Color, Signal as VideoSignal};
 
 use input_devices::InputDevice;
@@ -67,6 +69,14 @@ impl Emulator {
             color_palette: video::DEFAULT_PALETTE,
             cycle: 0,
         }
+    }
+
+    pub fn save_state(&self) -> TimeMachine {
+        TimeMachine::save(self)
+    }
+
+    pub fn load_state(&mut self, state: TimeMachine) {
+        state.load(self);
     }
 
     pub fn video_signal(&self) -> video::Signal {

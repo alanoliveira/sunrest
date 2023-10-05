@@ -1,5 +1,9 @@
 mod channels;
+mod time_machine;
 
+pub use time_machine::TimeMachine;
+
+#[derive(Copy, Clone)]
 enum SequencerPeriod {
     FourSteps,
     FiveSteps,

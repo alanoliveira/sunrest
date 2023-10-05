@@ -5,11 +5,13 @@ use super::*;
 use duty_cycle::*;
 use sweep::*;
 
+#[derive(Clone)]
 pub enum Kind {
     Pulse1,
     Pulse2,
 }
 
+#[derive(Clone)]
 pub struct Pulse {
     pub length: Length,
     timer: Timer,

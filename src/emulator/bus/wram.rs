@@ -1,6 +1,7 @@
 const WRAM_SIZE: usize = 0x0800;
 const WRAM_BIT_MASK: u16 = 0x07FF;
 
+#[derive(Clone)]
 pub struct Wram(Box<[u8; WRAM_SIZE]>);
 
 impl Wram {
@@ -41,6 +42,5 @@ mod tests {
         assert_eq!(wram.read(0x0801), 0x02);
         assert_eq!(wram.read(0x1002), 0x03);
         assert_eq!(wram.read(0x1003), 0x04);
-
     }
 }

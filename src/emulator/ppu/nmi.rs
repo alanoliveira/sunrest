@@ -1,3 +1,4 @@
+#[derive(Clone)]
 pub struct Nmi {
     occurred: Option<()>,
     countdown: usize,
@@ -19,7 +20,7 @@ impl Nmi {
     }
 
     pub fn schedule(&mut self) {
-        self.countdown = 14; 
+        self.countdown = 14;
     }
 
     pub fn clock(&mut self) {

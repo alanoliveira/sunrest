@@ -1,9 +1,11 @@
 mod cartridge_io;
 mod palette_ram;
+mod time_machine;
 mod vram;
 mod vram_mirroring;
 
 pub use cartridge_io::*;
+pub use time_machine::TimeMachine;
 
 use super::*;
 use vram_mirroring::Mirroring;

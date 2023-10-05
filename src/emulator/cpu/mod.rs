@@ -4,8 +4,10 @@ mod tests;
 pub mod disasm;
 mod opcodes;
 mod status;
+mod time_machine;
 
 pub use status::Status;
+pub use time_machine::TimeMachine;
 
 use opcodes::*;
 

@@ -1,7 +1,7 @@
 use super::*;
 
+#[derive(Clone)]
 pub struct Mapper004 {
-    info: CartridgeInfo,
     mirror_mode: MirrorMode,
     prg_mode: PrgBankMode,
     chr_inversion: bool,
@@ -15,12 +15,13 @@ pub struct Mapper004 {
 
     prg_banks: [Bank<0x2000>; 4],
     chr_banks: [Bank<0x0400>; 8],
+
+    last_prg_bank: usize,
 }
 
 impl Mapper004 {
-    pub fn new(info: CartridgeInfo) -> Self {
+    pub fn new(info: &CartridgeData) -> Self {
         let mut mapper = Self {
-            info,
             mirror_mode: MirrorMode::Horizontal,
             prg_mode: PrgBankMode::A,
             chr_inversion: false,
@@ -34,21 +35,19 @@ impl Mapper004 {
 
             prg_banks: [Bank(0); 4],
             chr_banks: [Bank(0); 8],
+
+            last_prg_bank: (info.prg_banks * 2) - 1,
         };
 
         mapper.prg_banks[0].select(0);
         mapper.prg_banks[1].select(1);
-        mapper.prg_banks[2].select(mapper.prg_banks() - 2);
-        mapper.prg_banks[3].select(mapper.prg_banks() - 1);
+        mapper.prg_banks[2].select(mapper.last_prg_bank - 1);
+        mapper.prg_banks[3].select(mapper.last_prg_bank);
         mapper
-    }
-
-    fn prg_banks(&self) -> usize {
-        self.info.prg_banks * 2
     }
 }
 
-impl Mapper for Mapper004 {
+impl Mappable for Mapper004 {
     fn configure(&mut self, addr: u16, val: u8) {
         match addr {
             0x0000..=0x1FFF => match addr & 1 {
@@ -83,10 +82,10 @@ impl Mapper for Mapper004 {
                     match self.prg_mode {
                         PrgBankMode::A => {
                             self.prg_banks[0].select(self.registers[6]);
-                            self.prg_banks[2].select(self.prg_banks() - 2);
+                            self.prg_banks[2].select(self.last_prg_bank - 1);
                         }
                         PrgBankMode::B => {
-                            self.prg_banks[0].select(self.prg_banks() - 2);
+                            self.prg_banks[0].select(self.last_prg_bank - 1);
                             self.prg_banks[2].select(self.registers[6]);
                         }
                     }
@@ -152,6 +151,7 @@ impl Mapper for Mapper004 {
     }
 }
 
+#[derive(Clone)]
 enum PrgBankMode {
     A,
     B,
@@ -167,7 +167,7 @@ impl From<bool> for PrgBankMode {
     }
 }
 
-#[derive(Default)]
+#[derive(Default, Clone)]
 struct Irq {
     pub a12_state: bool,
     pub enabled: bool,
@@ -201,8 +201,8 @@ impl Irq {
 mod tests {
     use super::*;
 
-    fn mk_info() -> CartridgeInfo {
-        CartridgeInfo {
+    fn mk_info() -> CartridgeData {
+        CartridgeData {
             chr_banks: 15,
             prg_banks: 5,
             ..Default::default()
@@ -211,7 +211,7 @@ mod tests {
 
     #[test]
     fn test_irq() {
-        let mut mapper = Mapper004::new(mk_info());
+        let mut mapper = Mapper004::new(&mk_info());
         mapper.configure(0x6001, 0); // enable IRQ
         mapper.configure(0x4000, 4); // set latch
         mapper.configure(0x4001, 0); // clear counter
@@ -243,7 +243,7 @@ mod tests {
 
     #[test]
     fn test_mirror_mode() {
-        let mut mapper = Mapper004::new(mk_info());
+        let mut mapper = Mapper004::new(&mk_info());
         assert_eq!(mapper.mirror_mode(), MirrorMode::Horizontal);
         mapper.configure(0x2000, 0);
         assert_eq!(mapper.mirror_mode(), MirrorMode::Vertical);
@@ -253,7 +253,7 @@ mod tests {
 
     #[test]
     fn test_prg_addr() {
-        let mut mapper = Mapper004::new(mk_info());
+        let mut mapper = Mapper004::new(&mk_info());
         assert_eq!(mapper.prg_addr(0x0000), 0x0000);
         assert_eq!(mapper.prg_addr(0x2000), 0x2000);
 
@@ -296,7 +296,7 @@ mod tests {
 
     #[test]
     fn test_chr_addr() {
-        let mut mapper = Mapper004::new(mk_info());
+        let mut mapper = Mapper004::new(&mk_info());
         assert_eq!(mapper.chr_addr(0x0000), 0x0000);
         assert_eq!(mapper.chr_addr(0x0600), 0x0200);
 

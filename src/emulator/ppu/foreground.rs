@@ -1,5 +1,6 @@
 use super::*;
 
+#[derive(Clone)]
 struct SpritePixels {
     hi: u8,
     lo: u8,
@@ -17,6 +18,7 @@ impl SpritePixels {
     }
 }
 
+#[derive(Clone)]
 pub struct Foreground {
     spr_pixels: Vec<SpritePixels>,
     pub zero_fetch: bool,

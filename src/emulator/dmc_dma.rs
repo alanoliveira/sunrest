@@ -1,6 +1,6 @@
 use super::*;
 
-#[derive(PartialEq, Eq)]
+#[derive(PartialEq, Eq, Clone)]
 enum DmaState {
     Idle,
     Ready,
@@ -8,6 +8,7 @@ enum DmaState {
     Running,
 }
 
+#[derive(Clone)]
 pub struct DmcDma {
     state: DmaState,
     address: u16,

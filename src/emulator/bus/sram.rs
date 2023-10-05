@@ -1,5 +1,6 @@
 const SRAM_SIZE: usize = 0x2000;
 
+#[derive(Clone)]
 pub struct Sram(Box<[u8; SRAM_SIZE]>);
 
 impl Sram {

@@ -1,7 +1,7 @@
 use super::*;
 
+#[derive(Clone)]
 pub struct Mapper001 {
-    info: CartridgeInfo,
     load_register: LoadRegister,
     control_register: ControlRegister,
 
@@ -12,22 +12,26 @@ pub struct Mapper001 {
     chr_bank_4_hi: Bank<0x1000>,
     chr_bank_4_lo: Bank<0x1000>,
     chr_bank_8: Bank<0x2000>,
+
+    last_prg_bank: usize,
 }
 
 impl Mapper001 {
-    pub fn new(info: CartridgeInfo) -> Self {
+    pub fn new(info: &CartridgeData) -> Self {
+        let last_prg_bank = info.prg_banks - 1;
         Self {
-            info,
             load_register: LoadRegister::new(),
             control_register: ControlRegister(0x0C),
 
-            prg_bank_16_hi: Bank(info.prg_banks - 1),
+            prg_bank_16_hi: Bank(last_prg_bank),
             prg_bank_16_lo: Bank(0),
             prg_bank_32: Bank(0),
 
             chr_bank_4_hi: Bank(0),
             chr_bank_4_lo: Bank(0),
             chr_bank_8: Bank(0),
+
+            last_prg_bank,
         }
     }
 
@@ -58,14 +62,14 @@ impl Mapper001 {
                 self.prg_bank_16_lo.select(0);
             }
             PrgRomMode::Switch16KBFixLast => {
-                self.prg_bank_16_hi.select(self.info.prg_banks - 1);
+                self.prg_bank_16_hi.select(self.last_prg_bank);
                 self.prg_bank_16_lo.select(self.load_register.read());
             }
         }
     }
 }
 
-impl Mapper for Mapper001 {
+impl Mappable for Mapper001 {
     fn configure(&mut self, addr: u16, val: u8) {
         if val & 0b1000_0000 != 0 {
             self.load_register.reset();
@@ -112,6 +116,7 @@ impl Mapper for Mapper001 {
     }
 }
 
+#[derive(Clone)]
 struct LoadRegister(u8);
 
 impl LoadRegister {
@@ -154,6 +159,7 @@ enum ChrRomMode {
     SwitchTwo4KB,
 }
 
+#[derive(Clone)]
 struct ControlRegister(u8);
 
 impl ControlRegister {
@@ -193,8 +199,8 @@ impl ControlRegister {
 mod tests {
     use super::*;
 
-    fn mk_info(chr_banks: usize, prg_banks: usize) -> CartridgeInfo {
-        CartridgeInfo {
+    fn mk_info(chr_banks: usize, prg_banks: usize) -> CartridgeData {
+        CartridgeData {
             chr_banks,
             prg_banks,
             ..Default::default()
@@ -211,7 +217,7 @@ mod tests {
 
     #[test]
     fn test_prg_addr_switch_32() {
-        let mut mapper = Mapper001::new(mk_info(3, 3));
+        let mut mapper = Mapper001::new(&mk_info(3, 3));
         conf_reg!(mapper, 0x0000, 0b0000);
         conf_reg!(mapper, 0x6000, 0b0000);
         assert_eq!(mapper.prg_addr(0x0000), 0x0000);
@@ -225,7 +231,7 @@ mod tests {
 
     #[test]
     fn test_prg_addr_switch_16_fix_first() {
-        let mut mapper = Mapper001::new(mk_info(3, 3));
+        let mut mapper = Mapper001::new(&mk_info(3, 3));
         conf_reg!(mapper, 0x0000, 0b1000);
         conf_reg!(mapper, 0x6000, 0b0010);
         assert_eq!(mapper.prg_addr(0x0000), 0x0000);
@@ -234,7 +240,7 @@ mod tests {
 
     #[test]
     fn test_prg_addr_switch_16_fix_last() {
-        let mut mapper = Mapper001::new(mk_info(3, 3));
+        let mut mapper = Mapper001::new(&mk_info(3, 3));
         conf_reg!(mapper, 0x0000, 0b1100);
         conf_reg!(mapper, 0x6000, 0b0001);
         assert_eq!(mapper.prg_addr(0x0000), 0x4000);
@@ -243,7 +249,7 @@ mod tests {
 
     #[test]
     fn test_chr_addr_one_8k() {
-        let mut mapper = Mapper001::new(mk_info(3, 3));
+        let mut mapper = Mapper001::new(&mk_info(3, 3));
         conf_reg!(mapper, 0x0000, 0b00000);
         conf_reg!(mapper, 0x2000, 0b0000);
         assert_eq!(mapper.chr_addr(0x0000), 0x0000);
@@ -260,7 +266,7 @@ mod tests {
 
     #[test]
     fn test_chr_addr_two_4k() {
-        let mut mapper = Mapper001::new(mk_info(3, 3));
+        let mut mapper = Mapper001::new(&mk_info(3, 3));
         conf_reg!(mapper, 0x0000, 0b10000);
         conf_reg!(mapper, 0x2000, 0b0000);
         conf_reg!(mapper, 0x4000, 0b0011);
@@ -278,7 +284,7 @@ mod tests {
 
     #[test]
     fn test_mirror_mode() {
-        let mut mapper = Mapper001::new(mk_info(3, 3));
+        let mut mapper = Mapper001::new(&mk_info(3, 3));
         assert_eq!(mapper.mirror_mode(), MirrorMode::SingleScreen0);
         conf_reg!(mapper, 0x0000, 0b10);
         assert_eq!(mapper.mirror_mode(), MirrorMode::Vertical);

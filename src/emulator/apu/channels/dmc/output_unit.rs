@@ -1,4 +1,4 @@
-#[derive(Debug, Default)]
+#[derive(Debug, Default, Clone)]
 pub struct OutputUnit {
     shift_register: u8,
     bits_remaining: u8,

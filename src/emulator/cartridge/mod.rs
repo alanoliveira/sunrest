@@ -1,17 +1,21 @@
 mod i_nes;
+mod mappers;
+mod time_machine;
 
-pub mod mappers;
+pub use time_machine::TimeMachine;
 
 const CHR_RAM_SIZE: usize = 0x2000;
 
-#[derive(Debug, Default, Copy, Clone)]
-pub struct CartridgeInfo {
+#[derive(Debug, Default, Clone)]
+pub struct CartridgeData {
     pub mapper_code: u8,
     pub prg_banks: usize,
     pub chr_banks: usize,
     pub mirror_mode: MirrorMode,
     pub has_persistent_memory: bool,
     pub has_trainer: bool,
+    pub prg_data: Vec<u8>,
+    pub chr_data: Vec<u8>,
 }
 
 #[derive(Debug, Default, Clone, Copy, PartialEq, Eq)]
@@ -24,37 +28,36 @@ pub enum MirrorMode {
 }
 
 pub struct Cartridge {
-    prg_data: Vec<u8>,
-    chr_data: Vec<u8>,
+    data: CartridgeData,
     chr_ram: Box<[u8; CHR_RAM_SIZE]>,
-    mapper: Box<dyn mappers::Mapper>,
+    mapper: mappers::Mapper,
 }
 
 impl Cartridge {
-    pub fn new(info: CartridgeInfo, prg_data: &[u8], chr_data: &[u8]) -> Self {
+    pub fn new(data: CartridgeData) -> Self {
+        let mapper = mappers::Mapper::build(&data);
         Self {
-            prg_data: prg_data.to_vec(),
-            chr_data: chr_data.to_vec(),
+            data,
             chr_ram: Box::new([0; CHR_RAM_SIZE]),
-            mapper: mappers::build(info),
+            mapper,
         }
     }
 
     pub fn read_prg(&self, addr: u16) -> u8 {
-        self.prg_data[self.mapper.prg_addr(addr)]
+        self.data.prg_data[self.mapper.as_ref().prg_addr(addr)]
     }
 
     pub fn read_chr(&self, addr: u16) -> u8 {
-        if self.chr_data.is_empty() {
+        if self.data.chr_banks == 0 {
             self.chr_ram[addr as usize]
         } else {
-            let addr = self.mapper.chr_addr(addr);
-            self.chr_data[addr]
+            let addr = self.mapper.as_ref().chr_addr(addr);
+            self.data.chr_data[addr]
         }
     }
 
     pub fn write_prg(&mut self, addr: u16, val: u8) {
-        self.mapper.configure(addr, val);
+        self.mapper.as_mut().configure(addr, val);
     }
 
     pub fn write_chr(&mut self, addr: u16, val: u8) {
@@ -62,11 +65,11 @@ impl Cartridge {
     }
 
     pub fn mirror_mode(&self) -> MirrorMode {
-        self.mapper.mirror_mode()
+        self.mapper.as_ref().mirror_mode()
     }
 
     pub fn take_irq(&mut self) -> bool {
-        self.mapper.take_irq()
+        self.mapper.as_mut().take_irq()
     }
 }
 
@@ -74,5 +77,7 @@ pub fn open_rom(path: &std::path::Path) -> Cartridge {
     log!("Loading ROM file: {:?}", path);
     let rom_data = std::fs::read(path).expect("Failed to read ROM file.");
 
-    i_nes::INesRomBuilder::build(&rom_data)
+    let cartridge_data = i_nes::INesRomBuilder::build(&rom_data);
+
+    Cartridge::new(cartridge_data)
 }

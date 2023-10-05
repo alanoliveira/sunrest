@@ -3,7 +3,7 @@ pub trait IO {
     fn write(&mut self, val: u8);
 }
 
-#[derive(Debug, PartialEq, Eq)]
+#[derive(Debug, PartialEq, Eq, Clone)]
 enum DmaState {
     Idle,
     Ready,
@@ -11,6 +11,7 @@ enum DmaState {
     Running,
 }
 
+#[derive(Clone)]
 pub struct OamDma {
     page: u8,
     index: u16,

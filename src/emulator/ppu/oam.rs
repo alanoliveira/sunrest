@@ -2,6 +2,7 @@ use super::*;
 
 const OAM_SIZE: usize = 0x100;
 
+#[derive(Clone)]
 pub struct Oam {
     mem: Box<[u8; OAM_SIZE]>,
 }

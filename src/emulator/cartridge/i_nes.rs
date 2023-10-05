@@ -42,7 +42,7 @@ impl From<u8> for Flags7 {
 pub struct INesRomBuilder;
 
 impl INesRomBuilder {
-    pub fn build(data: &[u8]) -> Cartridge {
+    pub fn build(data: &[u8]) -> CartridgeData {
         if data[0..=3].ne(&[0x4E, 0x45, 0x53, 0x1A]) {
             panic!("Invalid iNES header");
         }
@@ -51,15 +51,6 @@ impl INesRomBuilder {
         let chr_banks = data[5] as usize;
         let flags6 = Flags6::from(data[6]);
         let flags7 = Flags7::from(data[7]);
-
-        let cartridge_info = CartridgeInfo {
-            mapper_code: (flags7.mapper_hi << 4) | flags6.mapper_lo,
-            prg_banks,
-            chr_banks,
-            mirror_mode: flags6.mirroring,
-            has_persistent_memory: flags6.has_persistent_memory,
-            has_trainer: flags6.has_trainer,
-        };
 
         let prg_start = if flags6.has_trainer {
             TRAINER_SIZE
@@ -73,7 +64,16 @@ impl INesRomBuilder {
         let chr_size = chr_banks * CHR_ROM_PAGE_SIZE;
         let chr_data = &data[(prg_start + prg_size)..(prg_start + prg_size + chr_size)];
 
-        Cartridge::new(cartridge_info, prg_data, chr_data)
+        CartridgeData {
+            mapper_code: (flags7.mapper_hi << 4) | flags6.mapper_lo,
+            prg_banks,
+            chr_banks,
+            mirror_mode: flags6.mirroring,
+            has_persistent_memory: flags6.has_persistent_memory,
+            has_trainer: flags6.has_trainer,
+            prg_data: prg_data.to_vec(),
+            chr_data: chr_data.to_vec(),
+        }
     }
 }
 

@@ -3,6 +3,7 @@ mod shift;
 use super::*;
 use shift::*;
 
+#[derive(Clone)]
 pub struct Noise {
     shift: Shift,
     envelope: Envelope,

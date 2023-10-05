@@ -12,7 +12,7 @@ pub use scroll::Scroll;
 pub use spr_height::SprHeight;
 pub use vram_address::VramAddress;
 
-#[derive(Debug, Default)]
+#[derive(Debug, Default, Clone)]
 pub struct Registers {
     pub latch: Option<u8>,
 

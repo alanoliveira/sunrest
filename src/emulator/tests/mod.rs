@@ -52,15 +52,13 @@ impl Emulator {
 
 #[test]
 fn test_frame_timing() {
-    let cartridge = cartridge::Cartridge::new(
-        cartridge::CartridgeInfo {
-            prg_banks: 1,
-            chr_banks: 1,
-            ..Default::default()
-        },
-        &vec![0xEA; 0x8000],
-        &[],
-    );
+    let cartridge = cartridge::Cartridge::new(cartridge::CartridgeData {
+        prg_banks: 1,
+        chr_banks: 0,
+        prg_data: vec![0xEA; 0x8000],
+        chr_data: vec![],
+        ..Default::default()
+    });
     let mut emulator = Emulator::new(cartridge);
 
     for _ in 0..5 {

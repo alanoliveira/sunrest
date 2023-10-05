@@ -1,10 +1,12 @@
 mod apu_regs;
 mod ppu_regs;
 mod sram;
+mod time_machine;
 mod wram;
 
 pub use apu_regs::*;
 pub use ppu_regs::*;
+pub use time_machine::TimeMachine;
 
 use super::*;
 

@@ -1,5 +1,6 @@
 use super::*;
 
+#[derive(Clone)]
 pub struct Mapper002 {
     lo_prg_bank: Bank<0x4000>,
     hi_prg_bank: Bank<0x4000>,
@@ -7,7 +8,7 @@ pub struct Mapper002 {
 }
 
 impl Mapper002 {
-    pub fn new(info: CartridgeInfo) -> Self {
+    pub fn new(info: &CartridgeData) -> Self {
         Self {
             lo_prg_bank: Bank(0),
             hi_prg_bank: Bank(info.prg_banks - 1),
@@ -16,7 +17,7 @@ impl Mapper002 {
     }
 }
 
-impl Mapper for Mapper002 {
+impl Mappable for Mapper002 {
     fn configure(&mut self, _addr: u16, val: u8) {
         self.lo_prg_bank.select(val as usize)
     }
@@ -42,8 +43,8 @@ impl Mapper for Mapper002 {
 mod tests {
     use super::*;
 
-    fn mk_info(prg_banks: usize, mirror_mode: MirrorMode) -> CartridgeInfo {
-        CartridgeInfo {
+    fn mk_info(prg_banks: usize, mirror_mode: MirrorMode) -> CartridgeData {
+        CartridgeData {
             prg_banks,
             mirror_mode,
             ..Default::default()
@@ -52,7 +53,7 @@ mod tests {
 
     #[test]
     fn test_prg_addr() {
-        let mut mapper = Mapper002::new(mk_info(3, MirrorMode::Horizontal));
+        let mut mapper = Mapper002::new(&mk_info(3, MirrorMode::Horizontal));
         assert_eq!(mapper.prg_addr(0x4000), 0x8000);
         assert_eq!(mapper.prg_addr(0x7FFF), 0xBFFF);
         assert_eq!(mapper.prg_addr(0x0000), 0x0000);
@@ -64,7 +65,7 @@ mod tests {
 
     #[test]
     fn test_chr_addr() {
-        let mapper = Mapper002::new(mk_info(1, MirrorMode::Horizontal));
+        let mapper = Mapper002::new(&mk_info(1, MirrorMode::Horizontal));
         assert_eq!(mapper.chr_addr(0x0000), 0x0000);
         assert_eq!(mapper.chr_addr(0x1000), 0x1000);
         assert_eq!(mapper.chr_addr(0x1FFF), 0x1FFF);
@@ -72,10 +73,10 @@ mod tests {
 
     #[test]
     fn test_mirror_mode() {
-        let mapper = Mapper002::new(mk_info(1, MirrorMode::Horizontal));
+        let mapper = Mapper002::new(&mk_info(1, MirrorMode::Horizontal));
         assert_eq!(mapper.mirror_mode(), MirrorMode::Horizontal);
 
-        let mapper = Mapper002::new(mk_info(1, MirrorMode::Vertical));
+        let mapper = Mapper002::new(&mk_info(1, MirrorMode::Vertical));
         assert_eq!(mapper.mirror_mode(), MirrorMode::Vertical);
     }
 }

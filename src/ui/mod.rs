@@ -35,6 +35,8 @@ pub enum ButtonState {
 
 pub enum UiEvent {
     Quit,
+    SaveState,
+    LoadState,
     InputEvent {
         side: usize,
         button: JoypadButton,
@@ -52,6 +54,7 @@ pub struct Ui<E: engines::UiEngine> {
     joypad1: emulator::input_devices::StandardJoypad,
     joypad2: emulator::input_devices::StandardJoypad,
     sample_buffer: Vec<f32>,
+    emulator_state: Option<emulator::TimeMachine>,
 }
 
 impl<E: engines::UiEngine> Ui<E> {
@@ -69,6 +72,7 @@ impl<E: engines::UiEngine> Ui<E> {
             joypad1: emulator::input_devices::StandardJoypad::new(),
             joypad2: emulator::input_devices::StandardJoypad::new(),
             sample_buffer: Vec::with_capacity(SAMPLE_BUFFER_SIZE),
+            emulator_state: None,
         }
     }
 
@@ -123,6 +127,14 @@ impl<E: engines::UiEngine> Ui<E> {
         for event in self.event_buffer.drain(..) {
             match event {
                 UiEvent::Quit => self.state = UiState::Quit,
+                UiEvent::SaveState => {
+                    self.emulator_state = Some(self.emulator.save_state());
+                }
+                UiEvent::LoadState => {
+                    if let Some(state) = self.emulator_state.clone() {
+                        self.emulator.load_state(state);
+                    }
+                }
                 UiEvent::InputEvent {
                     side,
                     button,
