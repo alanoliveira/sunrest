@@ -4,6 +4,7 @@ mod settings;
 pub use settings::Settings;
 
 use super::*;
+use emulator::input_devices::StandardJoypad;
 
 const FPS: usize = 60;
 const SCREEN_WIDTH: usize = 256;
@@ -46,13 +47,12 @@ pub enum UiEvent {
 
 pub struct Ui<E: engines::UiEngine> {
     emulator: emulator::Emulator,
+    joypad1: StandardJoypad,
+    joypad2: StandardJoypad,
     engine: E,
-    event_buffer: Vec<UiEvent>,
     state: UiState,
     settings: Settings,
 
-    joypad1: emulator::input_devices::StandardJoypad,
-    joypad2: emulator::input_devices::StandardJoypad,
     sample_buffer: Vec<f32>,
     emulator_state: Option<emulator::TimeMachine>,
 }
@@ -64,13 +64,12 @@ impl<E: engines::UiEngine> Ui<E> {
 
         Self {
             emulator,
+            joypad1: StandardJoypad::new(),
+            joypad2: StandardJoypad::new(),
             engine,
-            event_buffer: Vec::new(),
             state: UiState::Running,
             settings: Settings::from_env(),
 
-            joypad1: emulator::input_devices::StandardJoypad::new(),
-            joypad2: emulator::input_devices::StandardJoypad::new(),
             sample_buffer: Vec::with_capacity(SAMPLE_BUFFER_SIZE),
             emulator_state: None,
         }
@@ -84,7 +83,7 @@ impl<E: engines::UiEngine> Ui<E> {
         let sample_clock = (sample_clock_ratio * self.settings.speed) as usize;
         let frame_skip = (self.settings.speed as usize).saturating_sub(1);
         while self.state == UiState::Running {
-            while self.sample_buffer.len() < self.sample_buffer.capacity() {
+            if self.sample_buffer.len() < self.sample_buffer.capacity() {
                 self.emulator.clock();
                 self.emulator
                     .clock_input_devices(&mut self.joypad1, &mut self.joypad2);
@@ -102,12 +101,12 @@ impl<E: engines::UiEngine> Ui<E> {
                         if fps_calc.frame % (1 + frame_skip) == 0 {
                             self.engine.present();
                         }
-                        self.engine.poll_events(&mut self.event_buffer);
-                        self.process_events();
 
                         if let Some(fps) = fps_calc.update() {
                             self.append_title(&format!("{:.02} fps", fps));
                         }
+
+                        self.process_events();
                     }
                 }
 
@@ -115,16 +114,14 @@ impl<E: engines::UiEngine> Ui<E> {
                     let sample = self.emulator.audio_signal().sample();
                     self.sample_buffer.push(sample * self.settings.volume);
                 }
-            }
-
-            if self.engine.feed_samples(self.sample_buffer.as_slice()) {
+            } else if self.engine.feed_samples(self.sample_buffer.as_slice()) {
                 self.sample_buffer.clear();
             }
         }
     }
 
     fn process_events(&mut self) {
-        for event in self.event_buffer.drain(..) {
+        for event in self.engine.poll_events() {
             match event {
                 UiEvent::Quit => self.state = UiState::Quit,
                 UiEvent::SaveState => {
