@@ -12,12 +12,10 @@ mod time_machine;
 mod video;
 
 pub mod cartridge;
-pub mod input_devices;
-
+pub use audio::Signal as AudioSignal;
+pub use bus::InputPort;
 pub use time_machine::TimeMachine;
 pub use video::{Color, Signal as VideoSignal};
-
-use input_devices::InputDevice;
 
 use std::{cell::RefCell, rc::Rc};
 
@@ -54,6 +52,7 @@ impl Emulator {
             Box::new(ppu_regs),
             Box::new(apu_regs),
         );
+
         let mut cpu = cpu::Cpu::new(bus);
 
         cpu.reset();
@@ -69,6 +68,14 @@ impl Emulator {
             color_palette: video::DEFAULT_PALETTE,
             cycle: 0,
         }
+    }
+
+    pub fn connect_port1(&mut self, port: Option<Box<dyn InputPort>>) {
+        self.cpu.mem.port1 = port;
+    }
+
+    pub fn connect_port2(&mut self, port: Option<Box<dyn InputPort>>) {
+        self.cpu.mem.port2 = port;
     }
 
     pub fn save_state(&self) -> TimeMachine {
@@ -99,23 +106,9 @@ impl Emulator {
         }
     }
 
-    pub fn clock_input_devices(&mut self, dev1: &mut dyn InputDevice, dev2: &mut dyn InputDevice) {
-        if let Some(input_ctrl) = self.cpu.mem.input_ctrl_write.take() {
-            dev1.write(input_ctrl);
-            self.cpu.mem.device1_state.replace(None);
-            dev2.write(input_ctrl);
-            self.cpu.mem.device2_state.replace(None);
-        } else {
-            if self.cpu.mem.device1_state.get().is_none() {
-                self.cpu.mem.device1_state.replace(Some(dev1.read()));
-            }
-            if self.cpu.mem.device2_state.get().is_none() {
-                self.cpu.mem.device2_state.replace(Some(dev2.read()));
-            }
-        }
-    }
-
     pub fn clock(&mut self) {
+        self.cpu.mem.update_ports_latch();
+
         // ~1.79mhz
         if self.cycle % 12 == 0 {
             if self.oam_dma.is_active() {

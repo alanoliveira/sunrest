@@ -2,6 +2,7 @@
 mod log;
 
 mod emulator;
+mod input_devices;
 mod ui;
 
 fn main() {

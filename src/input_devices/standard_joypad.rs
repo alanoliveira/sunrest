@@ -1,5 +1,3 @@
-use super::*;
-
 #[derive(Default, Debug)]
 pub struct StandardJoypad {
     strobe: bool,
@@ -28,16 +26,14 @@ impl StandardJoypad {
     }
 
     pub fn serial_read(&mut self) -> u8 {
-        let val = if self.strobe {
+        if self.strobe {
             // while strobe is high, return the current state of the A button
-            self.collect_buttons()
+            self.a as u8
         } else {
-            let cur_buf = self.buffer;
+            let state = self.buffer & 0x01;
             self.buffer = self.buffer.rotate_right(1);
-            cur_buf
-        };
-
-        val & 0x01
+            state
+        }
     }
 
     fn collect_buttons(&self) -> u8 {
@@ -49,16 +45,6 @@ impl StandardJoypad {
             | (self.down as u8) << 5
             | (self.left as u8) << 6
             | (self.right as u8) << 7
-    }
-}
-
-impl InputDevice for StandardJoypad {
-    fn read(&mut self) -> u8 {
-        self.serial_read()
-    }
-
-    fn write(&mut self, val: u8) {
-        self.set_strobe(val & 0x01 != 0);
     }
 }
 

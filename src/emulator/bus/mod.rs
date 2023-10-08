@@ -39,6 +39,11 @@ pub trait Addressable {
     fn write(&mut self, addr: u16, val: u8);
 }
 
+pub trait InputPort {
+    fn read(&self) -> u8;
+    fn write(&mut self, val: u8);
+}
+
 pub struct Bus {
     cartridge_io: Box<dyn Addressable>,
     ppu_regs: ppu_regs::PpuRegs,
@@ -47,9 +52,9 @@ pub struct Bus {
     sram: sram::Sram, // in reality this is on the cartridge
     oam_dma_page: Option<u8>,
 
-    pub input_ctrl_write: Option<u8>,
-    pub device1_state: std::cell::Cell<Option<u8>>,
-    pub device2_state: std::cell::Cell<Option<u8>>,
+    input_latch: u8,
+    pub port1: Option<Box<dyn InputPort>>,
+    pub port2: Option<Box<dyn InputPort>>,
 }
 
 impl Bus {
@@ -66,9 +71,9 @@ impl Bus {
             sram: sram::Sram::new(),
             oam_dma_page: None,
 
-            input_ctrl_write: None,
-            device1_state: std::cell::Cell::new(None),
-            device2_state: std::cell::Cell::new(None),
+            input_latch: 0,
+            port1: None,
+            port2: None,
         }
     }
 
@@ -83,7 +88,7 @@ impl Bus {
             SRAM_START..=SRAM_END => self.sram.write(addr - SRAM_START, val),
             PRG_START..=PRG_END => self.cartridge_io.write(addr - PRG_START, val),
             OAM_DMA_ADDR => self.oam_dma_page = Some(val),
-            INPUT_PORT_CTRL_ADDR => self.input_ctrl_write = Some(val),
+            INPUT_PORT_CTRL_ADDR => self.input_latch = val,
             (APU_REGS_START..=APU_REGS_END) | APU_STATUS_ADDR | APU_FRAME_COUNTER_ADDR => {
                 self.apu_regs.write(addr - APU_REGS_START, val)
             }
@@ -97,13 +102,23 @@ impl Bus {
             PPU_REGS_START..=PPU_REGS_END => self.ppu_regs.read(addr - PPU_REGS_START),
             SRAM_START..=SRAM_END => self.sram.read(addr - SRAM_START),
             PRG_START..=PRG_END => self.cartridge_io.read(addr - PRG_START),
-            INPUT_PORT_1_ADDR => self.device1_state.take().unwrap_or(0),
-            INPUT_PORT_2_ADDR => self.device2_state.take().unwrap_or(0),
+            INPUT_PORT_1_ADDR => self.port1.as_ref().map(|p| p.read()).unwrap_or(0),
+            INPUT_PORT_2_ADDR => self.port2.as_ref().map(|p| p.read()).unwrap_or(0),
             APU_STATUS_ADDR => self.apu_regs.read(addr - APU_REGS_START),
             _ => {
                 log!("Attempted to read from unmapped CPU address: {addr:04X}");
                 0
             }
+        }
+    }
+
+    pub fn update_ports_latch(&mut self) {
+        if let Some(p) = self.port1.as_mut() {
+            p.write(self.input_latch)
+        }
+
+        if let Some(p) = self.port2.as_mut() {
+            p.write(self.input_latch)
         }
     }
 }

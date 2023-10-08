@@ -1,6 +1,5 @@
 use sdl2::audio::{AudioQueue, AudioSpecDesired};
 use sdl2::event::{Event, EventPollIterator};
-use sdl2::keyboard::Keycode;
 use sdl2::pixels::PixelFormatEnum;
 use sdl2::render::{Canvas, Texture};
 use sdl2::video::Window;
@@ -152,68 +151,19 @@ impl Iterator for UiEvents<'_> {
 
     fn next(&mut self) -> Option<Self::Item> {
         self.0.find_map(|event| match event {
-            Event::Quit { .. }
-            | Event::KeyDown {
-                keycode: Some(Keycode::Escape),
-                ..
-            } => Some(UiEvent::Quit),
-
-            Event::KeyDown {
-                keycode: Some(Keycode::LeftBracket),
-                ..
-            } => Some(UiEvent::SaveState),
-
-            Event::KeyDown {
-                keycode: Some(Keycode::RightBracket),
-                ..
-            } => Some(UiEvent::LoadState),
+            Event::Quit { .. } => Some(UiEvent::Quit),
 
             Event::KeyDown {
                 keycode: Some(keycode),
                 ..
-            }
-            | Event::KeyUp {
+            } => Some(UiEvent::KeyPress(keycode as i32)),
+
+            Event::KeyUp {
                 keycode: Some(keycode),
                 ..
-            } => {
-                let state = if matches!(event, Event::KeyDown { .. }) {
-                    ButtonState::Pressed
-                } else {
-                    ButtonState::Released
-                };
-                let joypad_button_evt = match keycode {
-                    // Joypad 1
-                    Keycode::W => Some((0, JoypadButton::Up)),
-                    Keycode::A => Some((0, JoypadButton::Left)),
-                    Keycode::S => Some((0, JoypadButton::Down)),
-                    Keycode::D => Some((0, JoypadButton::Right)),
-                    Keycode::J => Some((0, JoypadButton::A)),
-                    Keycode::K => Some((0, JoypadButton::B)),
-                    Keycode::Return => Some((0, JoypadButton::Start)),
-                    Keycode::Backspace => Some((0, JoypadButton::Select)),
+            } => Some(UiEvent::KeyRelease(keycode as i32)),
 
-                    // Joypad 2
-                    // Keycode::Up => Some((1, JoypadButton::Up)),
-                    // Keycode::Left => Some((1, JoypadButton::Left)),
-                    // Keycode::Down => Some((1, JoypadButton::Down)),
-                    // Keycode::Right => Some((1, JoypadButton::Right)),
-                    // Keycode::Z => Some((1, JoypadButton::A)),
-                    // Keycode::X => Some((1, JoypadButton::B)),
-                    // Keycode::C => Some((1, JoypadButton::Start)),
-                    // Keycode::V => Some((1, JoypadButton::Select)),
-                    _ => None,
-                };
-                if let Some((side, button)) = joypad_button_evt {
-                    Some(UiEvent::InputEvent {
-                        side,
-                        button,
-                        state,
-                    })
-                } else {
-                    None
-                }
-            }
-            _ => None
+            _ => None,
         })
     }
 }
