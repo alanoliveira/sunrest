@@ -10,6 +10,7 @@ pub struct TimeMachine {
     cartridge: cartridge::TimeMachine,
     oam_dma: oam_dma::OamDma,
     dmc_dma: dmc_dma::DmcDma,
+    cycle: usize,
 }
 
 impl TimeMachine {
@@ -23,6 +24,7 @@ impl TimeMachine {
             cartridge: cartridge::TimeMachine::save(&emu.cartridge.borrow()),
             oam_dma: emu.oam_dma.clone(),
             dmc_dma: emu.dmc_dma.clone(),
+            cycle: emu.cycle,
         }
     }
 
@@ -35,5 +37,6 @@ impl TimeMachine {
         self.cartridge.load(&mut emu.cartridge.borrow_mut());
         emu.oam_dma = self.oam_dma;
         emu.dmc_dma = self.dmc_dma;
+        emu.cycle = self.cycle;
     }
 }
