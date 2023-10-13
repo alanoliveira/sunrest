@@ -1,10 +1,6 @@
 mod fps_calc;
-mod joypad_handlers;
 mod settings;
 use super::*;
-use joypad_handlers::*;
-mod joypad_state;
-use joypad_state::*;
 
 pub mod engines;
 pub use settings::Settings;
@@ -14,6 +10,7 @@ const SCREEN_WIDTH: usize = 256;
 const SCREEN_HEIGHT: usize = 240;
 const SAMPLE_BUFFER_SIZE: usize = 512;
 const SAMPLE_RATE: usize = 44100;
+
 
 #[derive(PartialEq, Eq)]
 enum UiState {
@@ -32,8 +29,10 @@ pub struct Ui<E: engines::UiEngine> {
     engine: E,
     state: UiState,
     settings: Settings,
-    joypad1: Box<dyn JoypadHandler>,
-    joypad1_state: JoypadState,
+    joypad1_state: input_devices::standard_joypad::State,
+    joypad2_state: input_devices::standard_joypad::State,
+    pub joypad1_cable: Option<Box<dyn joypad_cable::JoypadCable>>,
+    pub joypad2_cable: Option<Box<dyn joypad_cable::JoypadCable>>,
 
     sample_buffer: Vec<f32>,
     emulator_state: Option<emulator::TimeMachine>,
@@ -41,21 +40,20 @@ pub struct Ui<E: engines::UiEngine> {
 }
 
 impl<E: engines::UiEngine> Ui<E> {
-    pub fn new(mut emulator: emulator::Emulator) -> Self {
+    pub fn new(emulator: emulator::Emulator) -> Self {
         let mut engine = E::new();
         let base_title = format!("sunrest - {}", emulator.rom_info().name);
         engine.set_title(&base_title);
-
-        let joypad1_connector = StandardJoypadHandler::new(input_devices::StandardJoypad::new());
-        emulator.connect_port1(Some(Box::new(joypad1_connector.clone())));
 
         Self {
             emulator,
             engine,
             state: UiState::Running,
             settings: Settings::from_env(),
-            joypad1: Box::new(joypad1_connector),
-            joypad1_state: JoypadState::default(),
+            joypad1_state: Default::default(),
+            joypad2_state: Default::default(),
+            joypad1_cable: None,
+            joypad2_cable: None,
 
             sample_buffer: Vec::with_capacity(SAMPLE_BUFFER_SIZE),
             emulator_state: None,
@@ -93,7 +91,12 @@ impl<E: engines::UiEngine> Ui<E> {
                         }
 
                         self.process_events();
-                        self.joypad1.set_state(self.joypad1_state.into());
+                        if let Some(joy1) = self.joypad1_cable.as_deref_mut() {
+                            joy1.write(self.joypad1_state.into())
+                        }
+                        if let Some(joy2) = self.joypad2_cable.as_deref_mut() {
+                            joy2.write(self.joypad2_state.into())
+                        }
                     }
                 }
 

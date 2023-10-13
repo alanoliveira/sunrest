@@ -16,6 +16,7 @@ pub use audio::Signal as AudioSignal;
 pub use bus::InputPort;
 pub use time_machine::TimeMachine;
 pub use video::{Color, Signal as VideoSignal};
+pub mod input_devices;
 
 use std::{cell::RefCell, rc::Rc};
 
