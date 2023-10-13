@@ -2,7 +2,7 @@ use super::*;
 
 #[derive(Clone)]
 pub struct TimeMachine {
-    chr_ram: Box<[u8; CHR_RAM_SIZE]>,
+    chr_ram: Vec<u8>,
     mapper: mappers::Mapper,
 }
 

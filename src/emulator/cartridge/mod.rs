@@ -18,6 +18,12 @@ pub struct CartridgeData {
     pub chr_data: Vec<u8>,
 }
 
+#[derive(Debug, Default, Clone)]
+pub struct RomInfo {
+    pub name: String,
+    pub cksum: u32,
+}
+
 #[derive(Debug, Default, Clone, Copy, PartialEq, Eq)]
 pub enum MirrorMode {
     #[default]
@@ -28,19 +34,25 @@ pub enum MirrorMode {
 }
 
 pub struct Cartridge {
+    rom_info: RomInfo,
     data: CartridgeData,
-    chr_ram: Box<[u8; CHR_RAM_SIZE]>,
+    chr_ram: Vec<u8>,
     mapper: mappers::Mapper,
 }
 
 impl Cartridge {
-    pub fn new(data: CartridgeData) -> Self {
+    pub fn new(rom_info: RomInfo, data: CartridgeData) -> Self {
         let mapper = mappers::Mapper::build(&data);
         Self {
+            rom_info,
             data,
-            chr_ram: Box::new([0; CHR_RAM_SIZE]),
+            chr_ram: vec![0; CHR_RAM_SIZE],
             mapper,
         }
+    }
+
+    pub fn rom_info(&self) -> &RomInfo {
+        &self.rom_info
     }
 
     pub fn read_prg(&self, addr: u16) -> u8 {
@@ -77,7 +89,11 @@ pub fn open_rom(path: &std::path::Path) -> Cartridge {
     log!("Loading ROM file: {:?}", path);
     let rom_data = std::fs::read(path).expect("Failed to read ROM file.");
 
+    let rom_info = RomInfo {
+        name: path.file_name().unwrap().to_string_lossy().to_string(),
+        cksum: rom_data.len() as u32, // @TODO: real checksum
+    };
     let cartridge_data = i_nes::INesRomBuilder::build(&rom_data);
 
-    Cartridge::new(cartridge_data)
+    Cartridge::new(rom_info, cartridge_data)
 }

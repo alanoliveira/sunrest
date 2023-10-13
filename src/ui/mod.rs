@@ -37,12 +37,14 @@ pub struct Ui<E: engines::UiEngine> {
 
     sample_buffer: Vec<f32>,
     emulator_state: Option<emulator::TimeMachine>,
+    base_title: String,
 }
 
 impl<E: engines::UiEngine> Ui<E> {
     pub fn new(mut emulator: emulator::Emulator) -> Self {
         let mut engine = E::new();
-        engine.set_title("sunrest");
+        let base_title = format!("sunrest - {}", emulator.rom_info().name);
+        engine.set_title(&base_title);
 
         let joypad1_connector = StandardJoypadHandler::new(input_devices::StandardJoypad::new());
         emulator.connect_port1(Some(Box::new(joypad1_connector.clone())));
@@ -57,6 +59,7 @@ impl<E: engines::UiEngine> Ui<E> {
 
             sample_buffer: Vec::with_capacity(SAMPLE_BUFFER_SIZE),
             emulator_state: None,
+            base_title,
         }
     }
 
@@ -86,7 +89,7 @@ impl<E: engines::UiEngine> Ui<E> {
                         }
 
                         if let Some(fps) = fps_calc.update() {
-                            self.append_title(&format!("{:.02} fps", fps));
+                            self.set_title(&format!("{:.02} fps", fps));
                         }
 
                         self.process_events();
@@ -134,11 +137,9 @@ impl<E: engines::UiEngine> Ui<E> {
         }
     }
 
-    fn append_title(&mut self, message: &str) {
-        let mut title = String::from("sunrest");
-        title.push_str(" - ");
-        title.push_str(message);
-        self.engine.set_title(&title);
+    fn set_title(&mut self, message: &str) {
+        self.engine
+            .set_title(&format!("{} - {}", self.base_title, message))
     }
 
     fn draw_point(&mut self, x: usize, y: usize, color: emulator::Color) {

@@ -78,6 +78,10 @@ impl Emulator {
         self.cpu.mem.port2 = port;
     }
 
+    pub fn rom_info(&self) -> cartridge::RomInfo {
+        self.cartridge.borrow().rom_info().clone()
+    }
+
     pub fn save_state(&self) -> TimeMachine {
         TimeMachine::save(self)
     }
