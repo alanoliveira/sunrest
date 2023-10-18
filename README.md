@@ -5,8 +5,18 @@ emulator works.
 
 ## Usage
 
-```sh
-sunrest <rom path>
+```
+Usage: sunrest [OPTIONS] <ROM>
+
+Arguments:
+  <ROM>  Path to a ROM file
+
+Options:
+      --volume <num>   Volume of the audio
+      --speed <num>    Speed of the emulation
+      --replay <FILE>  Path to the replay file
+      --record <FILE>  Path to save the replay file
+  -h, --help           Print help
 ```
 
 **The emulation is not accurate, games might display various glitches**
@@ -29,7 +39,8 @@ sunrest <rom path>
 
 ### Settings
 
-The following environment variables can be used to configure the emulator:
+Beside the command line arguments, the emulator can be configured using environment variables.  
+The following environment variables are supported:
 
 | env            | description                         |
 | -------------- | ----------------------------------- |

@@ -11,7 +11,6 @@ const SCREEN_HEIGHT: usize = 240;
 const SAMPLE_BUFFER_SIZE: usize = 512;
 const SAMPLE_RATE: usize = 44100;
 
-
 #[derive(PartialEq, Eq)]
 enum UiState {
     Running,
@@ -40,7 +39,7 @@ pub struct Ui<E: engines::UiEngine> {
 }
 
 impl<E: engines::UiEngine> Ui<E> {
-    pub fn new(emulator: emulator::Emulator) -> Self {
+    pub fn new(emulator: emulator::Emulator, settings: settings::Settings) -> Self {
         let mut engine = E::new();
         let base_title = format!("sunrest - {}", emulator.rom_info().name);
         engine.set_title(&base_title);
@@ -49,7 +48,7 @@ impl<E: engines::UiEngine> Ui<E> {
             emulator,
             engine,
             state: UiState::Running,
-            settings: Settings::from_env(),
+            settings,
             joypad1_state: Default::default(),
             joypad2_state: Default::default(),
             joypad1_cable: None,
