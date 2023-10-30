@@ -1,0 +1,87 @@
+name: Continuous Deployment
+
+on:
+  push:
+    tags:
+      - "v*.*.*"
+
+jobs:
+  publish:
+    name: Publishing for ${{ matrix.os }}
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        os: [macos-latest, ubuntu-latest, windows-latest]
+        rust: [stable]
+        include:
+          - os: macos-latest
+            artifact_prefix: macos
+            target: x86_64-apple-darwin
+            binary_postfix: ""
+          - os: ubuntu-latest
+            artifact_prefix: linux
+            target: x86_64-unknown-linux-gnu
+            binary_postfix: ""
+          - os: windows-latest
+            artifact_prefix: windows
+            target: x86_64-pc-windows-msvc
+            binary_postfix: ".exe"
+
+    steps:
+      - name: Installing Rust toolchain
+        uses: actions-rs/toolchain@v1
+        with:
+          toolchain: ${{ matrix.rust }}
+          override: true
+      - name: Installing needed macOS dependencies
+        if: matrix.os == 'macos-latest'
+        run: brew install sdl2
+      - name: Installing needed Windows dependencies
+        if: matrix.os == 'windows-latest'
+        run: |
+          Invoke-WebRequest -Uri "https://github.com/libsdl-org/SDL/releases/download/release-2.28.4/SDL2-devel-2.28.4-VC.zip" `
+            -OutFile SDL2-devel-2.28.4-VC.zip
+          7z x SDL2-devel-2.28.4-VC.zip
+          Copy-Item "SDL2-2.28.4\lib\x64\*" "C:\Users\runneradmin\.rustup\toolchains\stable-x86_64-pc-windows-msvc\lib\rustlib\x86_64-pc-windows-msvc\lib"
+      - name: Installing needed Ubuntu dependencies
+        if: matrix.os == 'ubuntu-latest'
+        run: |
+          sudo apt-get update -y -qq
+          sudo apt-get install -y libsdl2-dev 
+      - name: Checking out sources
+        uses: actions/checkout@v3
+      - name: Running cargo build
+        uses: actions-rs/cargo@v1
+        with:
+          command: build
+          toolchain: ${{ matrix.rust }}
+          args: --release --target ${{ matrix.target }}
+
+      - name: Packaging final binary
+        shell: bash
+        run: |
+          cd target/${{ matrix.target }}/release
+
+          BINARY_NAME=sunrest${{ matrix.binary_postfix }}
+          strip $BINARY_NAME
+
+          RELEASE_NAME=sunrest-${{ matrix.artifact_prefix }}
+
+          if [[ ${{ runner.os }} == 'Windows' ]]; then
+            7z a -tzip $RELEASE_NAME.zip $BINARY_NAME '/c/Users/runneradmin/.rustup/toolchains/stable-x86_64-pc-windows-msvc/lib/rustlib/x86_64-pc-windows-msvc/lib/SDL2.dll'
+            certutil -hashfile $RELEASE_NAME.zip sha256 | grep -E [A-Fa-f0-9]{64} > $RELEASE_NAME.sha256
+          else
+            tar czvf $RELEASE_NAME.tar.gz $BINARY_NAME
+            shasum -a 256 $RELEASE_NAME.tar.gz > $RELEASE_NAME.sha256
+          fi
+      - name: Releasing assets
+        uses: softprops/action-gh-release@v1
+        with:
+          files: |
+            target/${{ matrix.target }}/release/sunrest-${{ matrix.artifact_prefix }}.tar.gz
+            target/${{ matrix.target }}/release/sunrest-${{ matrix.artifact_prefix }}.zip
+            target/${{ matrix.target }}/release/sunrest-${{ matrix.artifact_prefix }}.sha256
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          command: publish
+          args: --token ${{ secrets.CARGO_API_KEY }} --allow-dirty

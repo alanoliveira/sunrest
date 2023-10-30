@@ -1,0 +1,76 @@
+name: Continuous Integration
+
+on:
+  push:
+    branches: [ "master" ]
+  pull_request:
+    branches: [ "master" ]
+
+env:
+  NES_TEST_ROMS_REF: 95d8f621ae55cee0d09b91519a8989ae0e64753b
+  NES_TEST_ROMS_PATH: "${{ github.workspace }}/tmp/nes-test-roms"
+
+jobs:
+  test:
+    name: Test
+    runs-on: ubuntu-latest
+    steps:
+    - run: |
+        sudo apt-get update -y -qq
+        sudo apt-get install -y libsdl2-dev 
+    - uses: actions/checkout@v3
+    - uses: actions-rs/toolchain@v1
+      with:
+        toolchain: stable
+        profile: minimal
+        override: true
+    - uses: actions/checkout@v3
+      with:
+        repository: christopherpow/nes-test-roms
+        path: ${{ env.NES_TEST_ROMS_PATH }}
+        ref: "${{ env.NES_TEST_ROMS_REF }}"
+    - uses: actions-rs/cargo@v1
+      with:
+        command: test
+        args: --verbose -- --include-ignored
+
+  fmt:
+    name: Fmt
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v3
+    - uses: actions-rs/toolchain@v1
+      with:
+        toolchain: stable
+        profile: minimal
+        override: true
+        components: rustfmt
+    - uses: actions-rs/cargo@v1
+      with:
+        command: fmt
+        args: --all -- --check
+
+  clippy:
+    name: Clippy
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v3
+    - uses: actions-rs/toolchain@v1
+      with:
+        toolchain: stable
+        profile: minimal
+        override: true
+        components: clippy
+    - uses: actions-rs/cargo@v1
+      with:
+        command: clippy
+
+  release:
+    name: Release
+    runs-on: ubuntu-latest
+    steps:
+      - uses: google-github-actions/release-please-action@v3
+        id: release
+        with:
+          release-type: rust
+          package-name: sunrest
